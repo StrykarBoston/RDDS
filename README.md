@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🛡️ Rogue Detection & Defense System (RDDS) - GUI Version
 
 A modern, responsive graphical user interface for enterprise network security monitoring and rogue device detection.
@@ -294,3 +295,6 @@ This project is provided for educational and research purposes. Use responsibly 
 ---
 
 **⚠️ Important**: This tool requires administrator privileges and should only be used on networks you own or have explicit permission to monitor.
+=======
+# RDDS
+>>>>>>> 46f81abc4fb6d8c1223b10e73021c6befb861342
