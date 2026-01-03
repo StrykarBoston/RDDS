@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # 🛡️ Rogue Detection & Defense System (RDDS) - GUI Version
 
 A modern, responsive graphical user interface for enterprise network security monitoring and rogue device detection.
@@ -118,25 +118,7 @@ A modern, responsive graphical user interface for enterprise network security mo
 - **GUI Settings**: Theme, refresh options
 - **Logging Settings**: Log levels, file management
 
-## 🎨 Design Features
 
-### Modern UI Elements
-- **Color-coded Status**: Visual risk indicators
-- **Responsive Layout**: Adapts to window resizing
-- **Progress Indicators**: Real-time operation feedback
-- **Modern Typography**: Clean, readable fonts
-
-### User Experience
-- **Intuitive Navigation**: Tab-based interface
-- **Visual Feedback**: Status changes and progress
-- **Error Handling**: User-friendly error messages
-- **Accessibility**: Clear labels and indicators
-
-### Performance
-- **Background Operations**: Non-blocking scans and monitoring
-- **Threading**: Smooth UI during operations
-- **Memory Management**: Efficient resource usage
-- **Real-time Updates**: Live data streaming
 
 ## 🔧 Configuration
 
@@ -239,40 +221,6 @@ Enable debug logging in settings:
 }
 ```
 
-## 📝 File Structure
-
-```
-RDDS/
-├── gui_main.py              # Main GUI application
-├── launcher.py              # Application launcher
-├── settings_config.py       # Settings management
-├── network_discovery.py     # Network scanning
-├── rogue_detector.py        # Rogue device detection
-├── attack_detector.py      # Attack detection
-├── rogue_ap_detector.py     # Rogue AP detection
-├── logger.py                # Logging system
-├── main.py                  # Original CLI version
-├── requirements.txt         # Dependencies
-├── settings.json            # Configuration (auto-generated)
-├── whitelist.json           # Trusted devices (auto-generated)
-└── README.md               # This file
-```
-
-## 🔮 Future Enhancements
-
-### Planned Features
-- **Dark Theme**: Alternative color scheme
-- **Network Topology**: Visual network mapping
-- **Advanced Analytics**: Machine learning integration
-- **Mobile Interface**: Remote monitoring
-- **API Integration**: External system connectivity
-- **Multi-language Support**: Internationalization
-
-### Performance Improvements
-- **Database Backend**: SQLite for data persistence
-- **Caching**: Improved response times
-- **Optimized Scanning**: Faster network discovery
-- **Resource Management**: Memory optimization
 
 ## 📞 Support
 
@@ -296,5 +244,3 @@ This project is provided for educational and research purposes. Use responsibly 
 
 **⚠️ Important**: This tool requires administrator privileges and should only be used on networks you own or have explicit permission to monitor.
 =======
-# RDDS
->>>>>>> 46f81abc4fb6d8c1223b10e73021c6befb861342
