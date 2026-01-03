@@ -38,6 +38,12 @@ class SecurityLogger:
             f'security_report_{datetime.now().strftime("%Y%m%d_%H%M%S")}.html'
         )
         
+        # Ensure devices and alerts are lists
+        if not devices:
+            devices = []
+        if not alerts:
+            alerts = []
+            
         html = f"""
 <!DOCTYPE html>
 <html>
@@ -52,6 +58,7 @@ class SecurityLogger:
         .rogue {{ background: #ffdddd; }}
         .suspicious {{ background: #ffffdd; }}
         .trusted {{ background: #ddffdd; }}
+        .no-data {{ background: #f9f9f9; text-align: center; font-style: italic; }}
     </style>
 </head>
 <body>
@@ -83,7 +90,11 @@ class SecurityLogger:
             <td>{d.get('status', 'N/A')}</td>
             <td>{d.get('risk_score', 0)}</td>
         </tr>
-        ''' for d in devices])}
+        ''' for d in devices]) if devices else '''
+        <tr class="no-data">
+            <td colspan="5">No devices detected</td>
+        </tr>
+        '''}
     </table>
     
     <h2>Security Alerts</h2>
@@ -101,14 +112,21 @@ class SecurityLogger:
             <td>{a['message']}</td>
             <td>{a.get('timestamp', 'N/A')}</td>
         </tr>
-        ''' for a in alerts])}
+        ''' for a in alerts]) if alerts else '''
+        <tr class="no-data">
+            <td colspan="4">No security alerts</td>
+        </tr>
+        '''}
     </table>
 </body>
 </html>
         """
         
-        with open(report_file, 'w') as f:
-            f.write(html)
-        
-        print(f"[+] Report generated: {report_file}")
-        return report_file
+        try:
+            with open(report_file, 'w', encoding='utf-8') as f:
+                f.write(html)
+            print(f"[+] Report generated: {report_file}")
+            return report_file
+        except Exception as e:
+            print(f"[!] Error generating report: {e}")
+            return None

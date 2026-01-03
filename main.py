@@ -142,6 +142,9 @@ class RogueDetectionSystem:
             if choice == '1':
                 devices, alerts = self.run_full_scan()
                 self.display_results(devices, alerts)
+                # Store for later report generation
+                self._last_devices = devices
+                self._last_alerts = alerts
                 
             elif choice == '2':
                 duration = int(input("Monitor duration (seconds): "))
@@ -160,6 +163,25 @@ class RogueDetectionSystem:
                 device = {'mac': mac, 'ip': ip, 'name': name}
                 self.detector.add_to_whitelist(device)
                 print("✓ Device added to whitelist")
+                
+            elif choice == '5':
+                print("\n📊 Generating Report...")
+                try:
+                    # Get last scan results if available
+                    devices = getattr(self, '_last_devices', [])
+                    alerts = getattr(self, '_last_alerts', [])
+                    
+                    if not devices and not alerts:
+                        print("⚠️  No scan data available. Running a quick scan first...")
+                        devices, alerts = self.run_full_scan()
+                        self._last_devices = devices
+                        self._last_alerts = alerts
+                    
+                    report_file = self.logger.generate_report(devices, alerts)
+                    print(f"✓ Report generated: {report_file}")
+                    
+                except Exception as e:
+                    print(f"❌ Error generating report: {e}")
                 
             elif choice == '6':
                 print("\n👋 Exiting...")
