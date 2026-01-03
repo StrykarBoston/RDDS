@@ -1,0 +1,9 @@
+scapy
+python-nmap
+netifaces
+psutil
+pyshark
+flask
+tkinter
+pandas
+requests
