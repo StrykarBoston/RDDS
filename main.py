@@ -125,6 +125,79 @@ class RogueDetectionSystem:
             for alert in alerts[:5]:
                 print(f"  ├─ [{alert['severity']}] {alert['type']}: {alert['message']}")
     
+    def view_whitelist(self):
+        """View whitelist with better formatting"""
+        print("\n📋 WHITELISTED DEVICES:")
+        if not self.detector.whitelist:
+            print("  No devices in whitelist.")
+            return
+            
+        for i, device in enumerate(self.detector.whitelist, 1):
+            print(f"  {i}. {device['mac']} | {device.get('ip', 'N/A')} | {device.get('name', 'Unknown')}")
+    
+    def add_device_to_whitelist(self):
+        """Add device to whitelist with validation"""
+        print("\n➕ Add Device to Whitelist")
+        mac = input("Enter MAC address: ").strip()
+        ip = input("Enter IP address: ").strip()
+        name = input("Enter device name: ").strip()
+        
+        if not mac:
+            print("❌ MAC address is required!")
+            return
+            
+        # Basic MAC validation
+        import re
+        if not re.match(r'^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$', mac):
+            print("❌ Invalid MAC address format!")
+            return
+        
+        device = {'mac': mac, 'ip': ip, 'name': name}
+        if self.detector.add_to_whitelist(device):
+            print(f"✓ Device {mac} added to whitelist")
+        else:
+            print(f"❌ Device {mac} already exists in whitelist!")
+    
+    def generate_report_interactive(self):
+        """Generate report with interactive options"""
+        print("\n📊 Generate Report")
+        try:
+            # Get last scan results if available
+            devices = getattr(self, '_last_devices', [])
+            alerts = getattr(self, '_last_alerts', [])
+            
+            if not devices and not alerts:
+                print("⚠️  No scan data available.")
+                choice = input("Would you like to run a quick scan first? (y/N): ").strip().lower()
+                if choice == 'y':
+                    devices, alerts = self.run_full_scan()
+                    self._last_devices = devices
+                    self._last_alerts = alerts
+                else:
+                    print("[*] Generating report with no scan data...")
+            
+            print("[*] Generating security report...")
+            report_file = self.logger.generate_report(devices, alerts)
+            
+            if report_file:
+                print(f"✓ Report generated: {report_file}")
+                
+                # Ask if user wants to open the report
+                try:
+                    import platform
+                    if platform.system().lower() == 'linux':
+                        choice = input("Would you like to open the report in browser? (y/N): ").strip().lower()
+                        if choice == 'y':
+                            import subprocess
+                            subprocess.run(['xdg-open', report_file], check=True)
+                except:
+                    pass
+            else:
+                print("❌ Failed to generate report")
+                
+        except Exception as e:
+            print(f"❌ Error generating report: {e}")
+    
     def edit_device_from_whitelist(self):
         """Edit device in whitelist"""
         if not self.detector.whitelist:
@@ -183,7 +256,7 @@ class RogueDetectionSystem:
             print("❌ Please enter a valid number!")
     
     def check_for_updates_cli(self):
-        """Check for software updates in CLI"""
+        """Check for software updates in CLI with improved error handling"""
         try:
             import requests
             
@@ -192,15 +265,38 @@ class RogueDetectionSystem:
             # Get current version
             current_version = "1.0.0"
             
+            # Test internet connectivity first
+            try:
+                print("[*] Testing internet connectivity...")
+                test_response = requests.get("https://www.google.com", timeout=5)
+                if test_response.status_code != 200:
+                    raise Exception("Internet connectivity test failed")
+                print("[*] Internet connectivity confirmed")
+            except Exception as e:
+                print(f"[!] Internet connectivity test failed: {e}")
+                print("\n❌ Unable to connect to the internet.")
+                print("Please check your internet connection and try again.")
+                print("If you're behind a proxy or firewall, you may need to:")
+                print("1. Configure your proxy settings")
+                print("2. Allow this application through your firewall")
+                print("3. Check if GitHub.com is accessible")
+                return
+            
             # Check GitHub repository for latest version
             repo_url = "https://api.github.com/repos/StrykarBoston/RDDS/releases/latest"
             
             try:
-                response = requests.get(repo_url, timeout=10)
+                print(f"[*] Checking GitHub API: {repo_url}")
+                response = requests.get(repo_url, timeout=15)
+                print(f"[*] GitHub API response status: {response.status_code}")
+                
                 if response.status_code == 200:
                     release_data = response.json()
                     latest_version = release_data['tag_name'].lstrip('v')
                     download_url = release_data.get('zipball_url')
+                    
+                    print(f"[*] Current version: {current_version}")
+                    print(f"[*] Latest version: {latest_version}")
                     
                     if latest_version > current_version:
                         print(f"\n🎉 Update Available!")
@@ -213,13 +309,33 @@ class RogueDetectionSystem:
                         
                         if choice == 'y' and download_url:
                             self.download_update_cli(download_url, latest_version)
+                        else:
+                            print("[*] Update download cancelled.")
                     else:
                         print(f"✅ You are running the latest version ({current_version})")
+                elif response.status_code == 403:
+                    print("\n❌ GitHub API rate limit exceeded.")
+                    print("Please try again later or visit:")
+                    print("https://github.com/StrykarBoston/RDDS/releases")
+                elif response.status_code == 404:
+                    print("\n❌ The RDDS repository was not found on GitHub.")
+                    print("Please check the repository name or visit:")
+                    print("https://github.com/StrykarBoston/RDDS")
                 else:
-                    print("❌ Could not check for updates. Please check your internet connection.")
+                    print(f"\n❌ GitHub API returned status {response.status_code}.")
+                    print("Please check your internet connection and try again.")
+                    print("You can also check for updates manually at:")
+                    print("https://github.com/StrykarBoston/RDDS/releases")
                     
+            except requests.exceptions.Timeout:
+                print("\n❌ Request to GitHub API timed out.")
+                print("Please check your internet connection and try again.")
+            except requests.exceptions.ConnectionError as e:
+                print(f"\n❌ Failed to connect to GitHub API.")
+                print(f"Error: {str(e)}")
+                print("Please check your internet connection, proxy settings, or firewall.")
             except requests.RequestException as e:
-                print(f"❌ Failed to check for updates: {str(e)}")
+                print(f"\n❌ Failed to check for updates: {str(e)}")
                 
         except ImportError:
             print("\n📦 Update Check")
@@ -259,7 +375,7 @@ class RogueDetectionSystem:
             print(f"\n❌ Failed to download update: {str(e)}")
     
     def interactive_menu(self):
-        """Interactive CLI menu"""
+        """Interactive CLI menu with back button functionality"""
         while True:
             print("\n" + "="*60)
             print("MAIN MENU")
@@ -274,7 +390,11 @@ class RogueDetectionSystem:
             print("8. Generate Report")
             print("9. Exit")
             
-            choice = input("\nSelect option: ").strip()
+            choice = input("\nSelect option (or 'back' to return): ").strip()
+            
+            if choice.lower() == 'back':
+                print("[*] Returning to main menu...")
+                continue
             
             if choice == '1':
                 devices, alerts = self.run_full_scan()
@@ -284,22 +404,17 @@ class RogueDetectionSystem:
                 self._last_alerts = alerts
                 
             elif choice == '2':
-                duration = int(input("Monitor duration (seconds): "))
-                self.monitor_attacks(duration)
+                try:
+                    duration = int(input("Monitor duration (seconds): "))
+                    self.monitor_attacks(duration)
+                except ValueError:
+                    print("❌ Please enter a valid number!")
                 
             elif choice == '3':
-                print("\n📋 WHITELISTED DEVICES:")
-                for device in self.detector.whitelist:
-                    print(f"  {device['mac']} | {device.get('ip', 'N/A')}")
-                    
-            elif choice == '4':
-                mac = input("Enter MAC address: ").strip()
-                ip = input("Enter IP address: ").strip()
-                name = input("Enter device name: ").strip()
+                self.view_whitelist()
                 
-                device = {'mac': mac, 'ip': ip, 'name': name}
-                self.detector.add_to_whitelist(device)
-                print("✓ Device added to whitelist")
+            elif choice == '4':
+                self.add_device_to_whitelist()
                 
             elif choice == '5':
                 self.edit_device_from_whitelist()
@@ -311,27 +426,13 @@ class RogueDetectionSystem:
                 self.check_for_updates_cli()
                 
             elif choice == '8':
-                print("\n📊 Generating Report...")
-                try:
-                    # Get last scan results if available
-                    devices = getattr(self, '_last_devices', [])
-                    alerts = getattr(self, '_last_alerts', [])
-                    
-                    if not devices and not alerts:
-                        print("⚠️  No scan data available. Running a quick scan first...")
-                        devices, alerts = self.run_full_scan()
-                        self._last_devices = devices
-                        self._last_alerts = alerts
-                    
-                    report_file = self.logger.generate_report(devices, alerts)
-                    print(f"✓ Report generated: {report_file}")
-                    
-                except Exception as e:
-                    print(f"❌ Error generating report: {e}")
+                self.generate_report_interactive()
                 
             elif choice == '9':
                 print("\n👋 Exiting...")
                 break
+            else:
+                print("❌ Invalid option. Please try again.")
 
 # ============================================
 # MAIN ENTRY POINT

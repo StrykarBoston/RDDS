@@ -1071,7 +1071,7 @@ class ModernRDDS_GUI:
         settings_dialog.show()
         
     def check_for_updates(self):
-        """Check for software updates"""
+        """Check for software updates with improved error handling"""
         try:
             import requests
             import subprocess
@@ -1084,15 +1084,42 @@ class ModernRDDS_GUI:
             # Get current version (you can store this in a config file)
             current_version = "1.0.0"  # This should be read from a version file
             
+            # Test internet connectivity first
+            try:
+                # Test with a simple request
+                test_response = requests.get("https://www.google.com", timeout=5)
+                if test_response.status_code != 200:
+                    raise Exception("Internet connectivity test failed")
+                print("[*] Internet connectivity confirmed")
+            except Exception as e:
+                print(f"[!] Internet connectivity test failed: {e}")
+                messagebox.showerror(
+                    "Connection Error", 
+                    "Unable to connect to the internet.\n\n"
+                    "Please check your internet connection and try again.\n\n"
+                    "If you're behind a proxy or firewall, you may need to:\n"
+                    "1. Configure your proxy settings\n"
+                    "2. Allow this application through your firewall\n"
+                    "3. Check if GitHub.com is accessible"
+                )
+                self.update_status("Ready")
+                return
+            
             # Check GitHub repository for latest version
             repo_url = "https://api.github.com/repos/StrykarBoston/RDDS/releases/latest"
             
             try:
-                response = requests.get(repo_url, timeout=10)
+                print(f"[*] Checking GitHub API: {repo_url}")
+                response = requests.get(repo_url, timeout=15)
+                print(f"[*] GitHub API response status: {response.status_code}")
+                
                 if response.status_code == 200:
                     release_data = response.json()
                     latest_version = release_data['tag_name'].lstrip('v')
                     download_url = release_data.get('zipball_url')
+                    
+                    print(f"[*] Current version: {current_version}")
+                    print(f"[*] Latest version: {latest_version}")
                     
                     if latest_version > current_version:
                         # Update available
@@ -1110,9 +1137,42 @@ class ModernRDDS_GUI:
                     else:
                         messagebox.showinfo("Up to Date", f"You are running the latest version ({current_version})")
                         self.add_activity("✅ Software is up to date")
+                elif response.status_code == 403:
+                    messagebox.showerror(
+                        "API Limit Reached", 
+                        "GitHub API rate limit exceeded.\n\n"
+                        "Please try again later or visit:\n"
+                        "https://github.com/StrykarBoston/RDDS/releases"
+                    )
+                elif response.status_code == 404:
+                    messagebox.showerror(
+                        "Repository Not Found", 
+                        "The RDDS repository was not found on GitHub.\n\n"
+                        "Please check the repository name or visit:\n"
+                        "https://github.com/StrykarBoston/RDDS"
+                    )
                 else:
-                    messagebox.showerror("Update Check Failed", "Could not check for updates. Please check your internet connection.")
+                    messagebox.showerror(
+                        "Update Check Failed", 
+                        f"GitHub API returned status {response.status_code}.\n\n"
+                        "Please check your internet connection and try again.\n\n"
+                        "You can also check for updates manually at:\n"
+                        "https://github.com/StrykarBoston/RDDS/releases"
+                    )
                     
+            except requests.exceptions.Timeout:
+                messagebox.showerror(
+                    "Timeout Error", 
+                    "Request to GitHub API timed out.\n\n"
+                    "Please check your internet connection and try again."
+                )
+            except requests.exceptions.ConnectionError as e:
+                messagebox.showerror(
+                    "Connection Error", 
+                    f"Failed to connect to GitHub API.\n\n"
+                    f"Error: {str(e)}\n\n"
+                    "Please check your internet connection, proxy settings, or firewall."
+                )
             except requests.RequestException as e:
                 messagebox.showerror("Network Error", f"Failed to check for updates: {str(e)}")
                 

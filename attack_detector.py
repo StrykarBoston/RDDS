@@ -4,12 +4,16 @@
 from scapy.all import ARP, sniff, wrpcap
 from collections import defaultdict
 import time
+import platform
+import sys
 
 class AttackDetector:
     def __init__(self):
+        self.platform = platform.system().lower()
         self.arp_cache = {}
         self.arp_requests = defaultdict(list)
         self.alerts = []
+        print(f"[*] AttackDetector initialized for {self.platform}")
     
     def detect_arp_poisoning(self, packet):
         """Detect ARP spoofing/poisoning"""
@@ -33,7 +37,7 @@ class AttackDetector:
                             'timestamp': time.time()
                         }
                         self.alerts.append(alert)
-                        print(f"🚨 [CRITICAL] ARP Poisoning: {src_ip}")
+                        print(f" [CRITICAL] ARP Poisoning: {src_ip}")
                         return alert
                 
                 self.arp_cache[src_ip] = src_mac
@@ -66,7 +70,7 @@ class AttackDetector:
                     'timestamp': current_time
                 }
                 self.alerts.append(alert)
-                print(f"⚠ [HIGH] ARP Flood: {src_mac}")
+                print(f" [HIGH] ARP Flood: {src_mac}")
                 return alert
         
         return None
@@ -78,17 +82,61 @@ class AttackDetector:
         pass
     
     def start_monitoring(self, interface, duration=60):
-        """Start real-time attack monitoring"""
+        """Start real-time attack monitoring with improved error handling"""
         print(f"[*] Starting attack detection on {interface}...")
         print(f"[*] Monitoring for {duration} seconds...")
         
-        def packet_handler(pkt):
-            self.detect_arp_poisoning(pkt)
-            self.detect_arp_flood(pkt)
-        
-        sniff(iface=interface, prn=packet_handler, timeout=duration, store=False)
-        
-        return self.alerts
+        try:
+            # Test interface availability
+            import psutil
+            interfaces = psutil.net_if_addrs()
+            if interface not in interfaces:
+                print(f"[!] ERROR: Interface {interface} not found")
+                print(f"[!] Available interfaces: {list(interfaces.keys())}")
+                return []
+            
+            # Platform-specific timeout adjustment
+            actual_timeout = duration * 1.5  # Add buffer time
+            
+            def packet_handler(pkt):
+                try:
+                    alert1 = self.detect_arp_poisoning(pkt)
+                    alert2 = self.detect_arp_flood(pkt)
+                    
+                    if alert1 or alert2:
+                        print(f"[!] Attack detected at {time.strftime('%H:%M:%S')}")
+                except Exception as e:
+                    print(f"[!] Error processing packet: {e}")
+            
+            print(f"[*] Starting packet capture on {interface}...")
+            
+            # Start sniffing with better error handling
+            packets = sniff(
+                iface=interface, 
+                prn=packet_handler, 
+                timeout=actual_timeout, 
+                store=False,
+                stop_filter=lambda x: False  # Don't stop early
+            )
+            
+            print(f"[*] Monitoring completed. Captured packets processed.")
+            print(f"[*] Generated {len(self.alerts)} alerts")
+            
+            return self.alerts
+            
+        except KeyboardInterrupt:
+            print("\n[*] Monitoring stopped by user")
+            return self.alerts
+        except Exception as e:
+            print(f"[!] Monitoring failed: {e}")
+            if "Permission denied" in str(e):
+                if self.platform == "windows":
+                    print("[!] Please run as Administrator on Windows")
+                else:
+                    print("[!] Please run with sudo on Linux")
+            elif "No such device" in str(e):
+                print(f"[!] Interface {interface} not available")
+            return []
 
 # Usage Example
 if __name__ == "__main__":
