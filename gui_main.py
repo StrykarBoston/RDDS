@@ -169,6 +169,20 @@ class ModernRDDS_GUI:
         )
         self.status_indicator.pack(side='right', padx=20, pady=20)
         
+        # Update button
+        update_button = tk.Button(
+            header_frame,
+            text="🔄",
+            font=('Segoe UI', 16),
+            bg=self.colors['primary'],
+            fg='white',
+            bd=0,
+            relief='flat',
+            command=self.check_for_updates,
+            cursor='hand2'
+        )
+        update_button.pack(side='right', padx=(0, 10), pady=20)
+        
         # Settings button
         settings_button = tk.Button(
             header_frame,
@@ -363,13 +377,36 @@ class ModernRDDS_GUI:
         )
         title_label.pack(side='left')
         
+        # Button frame
+        button_frame = tk.Frame(title_frame, bg='white')
+        button_frame.pack(side='right')
+        
+        # Edit button
+        edit_button = ttk.Button(
+            button_frame,
+            text="✏️ Edit",
+            command=self.edit_device_dialog,
+            style='Primary.TButton'
+        )
+        edit_button.pack(side='right', padx=2)
+        
+        # Remove button
+        remove_button = ttk.Button(
+            button_frame,
+            text="🗑️ Remove",
+            command=self.remove_device_from_whitelist,
+            style='Danger.TButton'
+        )
+        remove_button.pack(side='right', padx=2)
+        
+        # Add button
         add_button = ttk.Button(
-            title_frame,
+            button_frame,
             text="➕ Add Device",
             command=self.add_device_dialog,
             style='Success.TButton'
         )
-        add_button.pack(side='right')
+        add_button.pack(side='right', padx=2)
         
         # Whitelist treeview
         columns = ('MAC', 'IP', 'Name', 'Added Date')
@@ -784,6 +821,119 @@ class ModernRDDS_GUI:
         ttk.Button(button_frame, text="Add Device", command=add_device, style='Success.TButton').pack(side='right', padx=(5, 0))
         ttk.Button(button_frame, text="Cancel", command=dialog.destroy).pack(side='right')
         
+    def edit_device_dialog(self):
+        """Show edit device dialog"""
+        selected = self.whitelist_tree.selection()
+        if not selected:
+            messagebox.showwarning("No Selection", "Please select a device to edit!")
+            return
+            
+        # Get selected device data
+        item = self.whitelist_tree.item(selected[0])
+        values = item['values']
+        mac = values[0]
+        ip = values[1]
+        name = values[2]
+        
+        # Find device in whitelist
+        device_to_edit = None
+        for device in self.detector.whitelist:
+            if device['mac'] == mac:
+                device_to_edit = device
+                break
+                
+        if not device_to_edit:
+            messagebox.showerror("Error", "Device not found in whitelist!")
+            return
+            
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Edit Device in Whitelist")
+        dialog.geometry("400x300")
+        dialog.resizable(False, False)
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        # Center dialog
+        dialog.update_idletasks()
+        x = (dialog.winfo_screenwidth() // 2) - (dialog.winfo_width() // 2)
+        y = (dialog.winfo_screenheight() // 2) - (dialog.winfo_height() // 2)
+        dialog.geometry(f"+{x}+{y}")
+        
+        # Form
+        main_frame = tk.Frame(dialog, bg=self.colors['light'])
+        main_frame.pack(fill='both', expand=True, padx=20, pady=20)
+        
+        # MAC Address (read-only)
+        tk.Label(main_frame, text="MAC Address:", bg=self.colors['light'], fg=self.colors['text']).pack(anchor='w', pady=(0, 5))
+        mac_entry = tk.Entry(main_frame, width=40, font=('Segoe UI', 10), state='readonly')
+        mac_entry.insert(0, mac)
+        mac_entry.pack(fill='x', pady=(0, 15))
+        
+        # IP Address
+        tk.Label(main_frame, text="IP Address:", bg=self.colors['light'], fg=self.colors['text']).pack(anchor='w', pady=(0, 5))
+        ip_entry = tk.Entry(main_frame, width=40, font=('Segoe UI', 10))
+        ip_entry.insert(0, ip)
+        ip_entry.pack(fill='x', pady=(0, 15))
+        
+        # Device Name
+        tk.Label(main_frame, text="Device Name:", bg=self.colors['light'], fg=self.colors['text']).pack(anchor='w', pady=(0, 5))
+        name_entry = tk.Entry(main_frame, width=40, font=('Segoe UI', 10))
+        name_entry.insert(0, name)
+        name_entry.pack(fill='x', pady=(0, 20))
+        
+        # Buttons
+        button_frame = tk.Frame(main_frame, bg=self.colors['light'])
+        button_frame.pack(fill='x')
+        
+        def update_device():
+            new_ip = ip_entry.get().strip()
+            new_name = name_entry.get().strip()
+            
+            # Update device in whitelist
+            device_to_edit['ip'] = new_ip
+            device_to_edit['name'] = new_name
+            
+            # Save whitelist
+            self.detector.save_whitelist()
+            
+            # Refresh display
+            self.load_whitelist_display()
+            self.add_activity(f"✏️ Updated device in whitelist: {mac}")
+            dialog.destroy()
+                
+        ttk.Button(button_frame, text="Update Device", command=update_device, style='Primary.TButton').pack(side='right', padx=(5, 0))
+        ttk.Button(button_frame, text="Cancel", command=dialog.destroy).pack(side='right')
+        
+    def remove_device_from_whitelist(self):
+        """Remove selected device from whitelist"""
+        selected = self.whitelist_tree.selection()
+        if not selected:
+            messagebox.showwarning("No Selection", "Please select a device to remove!")
+            return
+            
+        # Get selected device data
+        item = self.whitelist_tree.item(selected[0])
+        values = item['values']
+        mac = values[0]
+        name = values[2] if len(values) > 2 else 'Unknown'
+        
+        # Confirm deletion
+        result = messagebox.askyesno(
+            "Confirm Removal",
+            f"Are you sure you want to remove {name} ({mac}) from the whitelist?\n\n"
+            "This device will be treated as potentially rogue in future scans."
+        )
+        
+        if result:
+            # Remove from whitelist
+            self.detector.whitelist = [d for d in self.detector.whitelist if d['mac'] != mac]
+            self.detector.save_whitelist()
+            
+            # Refresh display
+            self.load_whitelist_display()
+            self.add_activity(f"🗑️ Removed device from whitelist: {mac}")
+            messagebox.showinfo("Success", f"Device {mac} removed from whitelist!")
+        
     def toggle_monitoring(self):
         """Toggle real-time monitoring"""
         if not self.monitoring:
@@ -919,6 +1069,124 @@ class ModernRDDS_GUI:
         """Open settings dialog"""
         settings_dialog = SettingsDialog(self.root, self.settings_manager)
         settings_dialog.show()
+        
+    def check_for_updates(self):
+        """Check for software updates"""
+        try:
+            import requests
+            import subprocess
+            import sys
+            
+            # Show checking dialog
+            self.update_status("Checking for updates...")
+            self.add_activity("🔄 Checking for software updates...")
+            
+            # Get current version (you can store this in a config file)
+            current_version = "1.0.0"  # This should be read from a version file
+            
+            # Check GitHub repository for latest version
+            repo_url = "https://api.github.com/repos/StrykarBoston/RDDS/releases/latest"
+            
+            try:
+                response = requests.get(repo_url, timeout=10)
+                if response.status_code == 200:
+                    release_data = response.json()
+                    latest_version = release_data['tag_name'].lstrip('v')
+                    download_url = release_data.get('zipball_url')
+                    
+                    if latest_version > current_version:
+                        # Update available
+                        result = messagebox.askyesno(
+                            "Update Available",
+                            f"A new version ({latest_version}) is available!\n\n"
+                            f"Current version: {current_version}\n"
+                            f"Latest version: {latest_version}\n\n"
+                            f"Release notes:\n{release_data.get('body', 'No release notes available.')}\n\n"
+                            f"Would you like to download the update?"
+                        )
+                        
+                        if result and download_url:
+                            self.download_update(download_url, latest_version)
+                    else:
+                        messagebox.showinfo("Up to Date", f"You are running the latest version ({current_version})")
+                        self.add_activity("✅ Software is up to date")
+                else:
+                    messagebox.showerror("Update Check Failed", "Could not check for updates. Please check your internet connection.")
+                    
+            except requests.RequestException as e:
+                messagebox.showerror("Network Error", f"Failed to check for updates: {str(e)}")
+                
+        except ImportError:
+            # Fallback method without requests library
+            messagebox.showinfo(
+                "Update Check",
+                "Automatic update checking requires the 'requests' library.\n\n"
+                "To install: pip install requests\n\n"
+                "Alternatively, visit:\n"
+                "https://github.com/StrykarBoston/RDDS/releases\n"
+                "to check for updates manually."
+            )
+            
+        self.update_status("Ready")
+        
+    def download_update(self, download_url, version):
+        """Download and install update"""
+        try:
+            import requests
+            import zipfile
+            import os
+            
+            # Show progress dialog
+            progress_dialog = tk.Toplevel(self.root)
+            progress_dialog.title("Downloading Update")
+            progress_dialog.geometry("400x150")
+            progress_dialog.resizable(False, False)
+            progress_dialog.transient(self.root)
+            progress_dialog.grab_set()
+            
+            # Center dialog
+            progress_dialog.update_idletasks()
+            x = (progress_dialog.winfo_screenwidth() // 2) - (progress_dialog.winfo_width() // 2)
+            y = (progress_dialog.winfo_screenheight() // 2) - (progress_dialog.winfo_height() // 2)
+            progress_dialog.geometry(f"+{x}+{y}")
+            
+            tk.Label(progress_dialog, text=f"Downloading RDDS v{version}...", font=('Segoe UI', 12)).pack(pady=20)
+            
+            progress_bar = ttk.Progressbar(progress_dialog, mode='indeterminate')
+            progress_bar.pack(fill='x', padx=20, pady=10)
+            progress_bar.start()
+            
+            # Download in background thread
+            def download_thread():
+                try:
+                    response = requests.get(download_url, stream=True)
+                    response.raise_for_status()
+                    
+                    # Save to temporary file
+                    temp_file = f"RDDS_v{version}.zip"
+                    with open(temp_file, 'wb') as f:
+                        for chunk in response.iter_content(chunk_size=8192):
+                            f.write(chunk)
+                    
+                    # Close progress dialog and show success
+                    progress_dialog.after(0, progress_dialog.destroy)
+                    self.root.after(0, lambda: messagebox.showinfo(
+                        "Download Complete", 
+                        f"Update downloaded to {temp_file}\n\n"
+                        "Please extract the zip file and replace the current installation."
+                    ))
+                    self.add_activity(f"✅ Update downloaded: {temp_file}")
+                    
+                except Exception as e:
+                    progress_dialog.after(0, progress_dialog.destroy)
+                    self.root.after(0, lambda: messagebox.showerror("Download Failed", f"Failed to download update: {str(e)}"))
+                    self.add_activity(f"❌ Update download failed: {str(e)}")
+            
+            threading.Thread(target=download_thread, daemon=True).start()
+            
+        except Exception as e:
+            messagebox.showerror("Update Error", f"Failed to start download: {str(e)}")
+            self.add_activity(f"❌ Update error: {str(e)}")
         
     def run(self):
         """Start the GUI application"""

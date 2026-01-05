@@ -47,6 +47,27 @@ class RogueDetector:
             return True
         return False
     
+    def update_whitelist_device(self, mac, new_ip=None, new_name=None):
+        """Update device in whitelist"""
+        for device in self.whitelist:
+            if device['mac'] == mac:
+                if new_ip is not None:
+                    device['ip'] = new_ip
+                if new_name is not None:
+                    device['name'] = new_name
+                self.save_whitelist()
+                return True
+        return False
+    
+    def remove_from_whitelist(self, mac):
+        """Remove device from whitelist"""
+        original_length = len(self.whitelist)
+        self.whitelist = [d for d in self.whitelist if d['mac'] != mac]
+        if len(self.whitelist) < original_length:
+            self.save_whitelist()
+            return True
+        return False
+    
     def is_whitelisted(self, mac):
         """Check if device is trusted"""
         return any(d['mac'] == mac for d in self.whitelist)

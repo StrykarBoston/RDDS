@@ -125,6 +125,139 @@ class RogueDetectionSystem:
             for alert in alerts[:5]:
                 print(f"  ├─ [{alert['severity']}] {alert['type']}: {alert['message']}")
     
+    def edit_device_from_whitelist(self):
+        """Edit device in whitelist"""
+        if not self.detector.whitelist:
+            print("❌ No devices in whitelist!")
+            return
+            
+        print("\n📋 WHITELISTED DEVICES:")
+        for i, device in enumerate(self.detector.whitelist, 1):
+            print(f"  {i}. {device['mac']} | {device.get('ip', 'N/A')} | {device.get('name', 'Unknown')}")
+        
+        try:
+            choice = int(input("\nSelect device number to edit: ")) - 1
+            if 0 <= choice < len(self.detector.whitelist):
+                device = self.detector.whitelist[choice]
+                print(f"\n✏️  Editing device: {device['mac']}")
+                
+                new_ip = input(f"Enter new IP address [{device.get('ip', 'N/A')}]: ").strip()
+                new_name = input(f"Enter new device name [{device.get('name', 'Unknown')}]: ").strip()
+                
+                # Update device using new method
+                if self.detector.update_whitelist_device(device['mac'], new_ip if new_ip else None, new_name if new_name else None):
+                    print(f"✓ Device {device['mac']} updated successfully!")
+                else:
+                    print(f"❌ Failed to update device {device['mac']}")
+            else:
+                print("❌ Invalid selection!")
+        except ValueError:
+            print("❌ Please enter a valid number!")
+    
+    def remove_device_from_whitelist(self):
+        """Remove device from whitelist"""
+        if not self.detector.whitelist:
+            print("❌ No devices in whitelist!")
+            return
+            
+        print("\n📋 WHITELISTED DEVICES:")
+        for i, device in enumerate(self.detector.whitelist, 1):
+            print(f"  {i}. {device['mac']} | {device.get('ip', 'N/A')} | {device.get('name', 'Unknown')}")
+        
+        try:
+            choice = int(input("\nSelect device number to remove: ")) - 1
+            if 0 <= choice < len(self.detector.whitelist):
+                device = self.detector.whitelist[choice]
+                confirm = input(f"\n⚠️  Are you sure you want to remove {device['mac']}? (y/N): ").strip().lower()
+                
+                if confirm == 'y':
+                    if self.detector.remove_from_whitelist(device['mac']):
+                        print(f"✓ Device {device['mac']} removed from whitelist!")
+                    else:
+                        print(f"❌ Failed to remove device {device['mac']}")
+                else:
+                    print("❌ Operation cancelled.")
+            else:
+                print("❌ Invalid selection!")
+        except ValueError:
+            print("❌ Please enter a valid number!")
+    
+    def check_for_updates_cli(self):
+        """Check for software updates in CLI"""
+        try:
+            import requests
+            
+            print("\n🔄 Checking for updates...")
+            
+            # Get current version
+            current_version = "1.0.0"
+            
+            # Check GitHub repository for latest version
+            repo_url = "https://api.github.com/repos/StrykarBoston/RDDS/releases/latest"
+            
+            try:
+                response = requests.get(repo_url, timeout=10)
+                if response.status_code == 200:
+                    release_data = response.json()
+                    latest_version = release_data['tag_name'].lstrip('v')
+                    download_url = release_data.get('zipball_url')
+                    
+                    if latest_version > current_version:
+                        print(f"\n🎉 Update Available!")
+                        print(f"Current version: {current_version}")
+                        print(f"Latest version: {latest_version}")
+                        print(f"\nRelease notes:")
+                        print(release_data.get('body', 'No release notes available.'))
+                        
+                        choice = input(f"\nWould you like to download the update? (y/N): ").strip().lower()
+                        
+                        if choice == 'y' and download_url:
+                            self.download_update_cli(download_url, latest_version)
+                    else:
+                        print(f"✅ You are running the latest version ({current_version})")
+                else:
+                    print("❌ Could not check for updates. Please check your internet connection.")
+                    
+            except requests.RequestException as e:
+                print(f"❌ Failed to check for updates: {str(e)}")
+                
+        except ImportError:
+            print("\n📦 Update Check")
+            print("Automatic update checking requires the 'requests' library.")
+            print("To install: pip install requests")
+            print("\nAlternatively, visit:")
+            print("https://github.com/StrykarBoston/RDDS/releases")
+            print("to check for updates manually.")
+    
+    def download_update_cli(self, download_url, version):
+        """Download update in CLI"""
+        try:
+            import requests
+            
+            print(f"\n⬇️  Downloading RDDS v{version}...")
+            
+            response = requests.get(download_url, stream=True)
+            response.raise_for_status()
+            
+            # Save to temporary file
+            temp_file = f"RDDS_v{version}.zip"
+            total_size = int(response.headers.get('content-length', 0))
+            downloaded = 0
+            
+            with open(temp_file, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+                    downloaded += len(chunk)
+                    if total_size > 0:
+                        progress = (downloaded / total_size) * 100
+                        print(f"\rProgress: {progress:.1f}%", end='', flush=True)
+            
+            print(f"\n✅ Update downloaded to {temp_file}")
+            print("Please extract the zip file and replace the current installation.")
+            
+        except Exception as e:
+            print(f"\n❌ Failed to download update: {str(e)}")
+    
     def interactive_menu(self):
         """Interactive CLI menu"""
         while True:
@@ -135,8 +268,11 @@ class RogueDetectionSystem:
             print("2. Monitor for Attacks (Real-time)")
             print("3. View Whitelist")
             print("4. Add Device to Whitelist")
-            print("5. Generate Report")
-            print("6. Exit")
+            print("5. Edit Device in Whitelist")
+            print("6. Remove Device from Whitelist")
+            print("7. Check for Updates")
+            print("8. Generate Report")
+            print("9. Exit")
             
             choice = input("\nSelect option: ").strip()
             
@@ -166,6 +302,15 @@ class RogueDetectionSystem:
                 print("✓ Device added to whitelist")
                 
             elif choice == '5':
+                self.edit_device_from_whitelist()
+                
+            elif choice == '6':
+                self.remove_device_from_whitelist()
+                
+            elif choice == '7':
+                self.check_for_updates_cli()
+                
+            elif choice == '8':
                 print("\n📊 Generating Report...")
                 try:
                     # Get last scan results if available
@@ -184,7 +329,7 @@ class RogueDetectionSystem:
                 except Exception as e:
                     print(f"❌ Error generating report: {e}")
                 
-            elif choice == '6':
+            elif choice == '9':
                 print("\n👋 Exiting...")
                 break
 
