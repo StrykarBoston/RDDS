@@ -1,7 +1,11 @@
 
 # 🛡️ Rogue Detection & Defense System (RDDS) - GUI Version
 
-A modern, responsive graphical user interface for enterprise network security monitoring and rogue device detection.
+[![Installation](https://img.shields.io/badge/Installation-Windows%20%7C%20Linux-blue)](README.md#-installation)
+[![Python](https://img.shields.io/badge/Python-3.8%2B-green)](requirements.txt)
+[![License](https://img.shields.io/badge/License-Educational%20%2F%20Research-orange)](LICENSE)
+
+A modern, responsive graphical user interface for enterprise network security monitoring and rogue device detection. **Cross-platform support for Windows and Linux with automated installation scripts.**
 
 ## 🌟 Features
 
@@ -41,37 +45,128 @@ A modern, responsive graphical user interface for enterprise network security mo
 - GUI preferences
 - Logging configuration
 
-## 🚀 Quick Start
+## 🚀 Installation
 
-### Prerequisites
-- **Python 3.7+**
-- **Administrator Privileges** (required for network operations)
-- **Windows OS** (optimized for Windows)
+### 🪟 Windows Installation
 
-### Installation
+#### Method 1: Automated Installation (Recommended)
+```bash
+# Clone the repository
+git clone https://github.com/StrykarBoston/RDDS.git
+cd RDDS
 
-1. **Clone or download the project**
-   ```bash
-   git clone <repository-url>
-   cd RDDS
-   ```
+# Run automated installer
+python install.py
 
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+# Launch application (as Administrator)
+python gui_main.py
+```
 
-3. **Run the application**
-   ```bash
-   # Method 1: Using the launcher (recommended)
-   python launcher.py
-   
-   # Method 2: Direct GUI launch
-   python gui_main.py
-   
-   # Method 3: Original CLI version
-   python main.py
-   ```
+#### Method 2: Manual Installation
+```bash
+# 1. Install Npcap (required for packet capture)
+# Download from: https://npcap.com/
+# Install with "WinPcap API-compatible Mode" checked
+
+# 2. Install Python dependencies
+pip install -r requirements.txt
+
+# 3. Run application (as Administrator)
+python gui_main.py
+```
+
+#### Windows Prerequisites
+- **Python 3.8+**
+- **Npcap** (for packet capture)
+- **Administrator privileges** (required for network operations)
+- **Windows 10/11** (recommended)
+
+---
+
+### 🐧 Linux Installation
+
+#### Method 1: Automated Installation (Recommended)
+```bash
+# Clone the repository
+git clone https://github.com/StrykarBoston/RDDS.git
+cd RDDS
+
+# Run automated installer (requires sudo)
+sudo python3 install_linux.py
+
+# Launch application
+sudo python3 gui_main.py
+```
+
+#### Method 2: Manual Installation
+```bash
+# 1. Install system dependencies
+sudo apt update
+sudo apt install python3 python3-pip python3-tk libpcap-dev nmap
+
+# 2. Install Python packages
+sudo pip3 install -r requirements.txt
+
+# 3. Run application (with sudo)
+sudo python3 gui_main.py
+```
+
+#### Alternative: Set Capabilities (Avoid sudo)
+```bash
+# Set Python capabilities (one-time setup)
+sudo setcap cap_net_raw,cap_net_admin=eip $(which python3)
+
+# Then run without sudo
+python3 gui_main.py
+```
+
+#### Linux Prerequisites
+- **Python 3.8+**
+- **sudo access** (for network operations)
+- **libpcap-dev** (for packet capture)
+- **nmap** (for network scanning)
+- **Kali Linux/Ubuntu/Debian** (tested)
+
+---
+
+### 📱 Cross-Platform Quick Start
+
+```bash
+# Clone repository
+git clone https://github.com/StrykarBoston/RDDS.git
+cd RDDS
+
+# Run appropriate installer
+python install.py          # Windows
+sudo python3 install_linux.py  # Linux
+
+# Start application
+python gui_main.py         # Windows (as Admin)
+sudo python3 gui_main.py   # Linux
+```
+
+### 🔧 Verification
+
+After installation, verify everything works:
+
+```bash
+# Test installation
+python install.py          # Windows
+sudo python3 install_linux.py  # Linux
+
+# Test imports
+python -c "from gui_main import ModernRDDS_GUI; print('✅ GUI imports successfully')"
+
+# Test network scanner
+python -c "from network_discovery import NetworkScanner; print('✅ Network scanner works')"
+```
+
+### 🚨 Important Notes
+
+- **Windows**: Must run as Administrator for packet capture
+- **Linux**: Must use sudo or set capabilities for network operations
+- **Npcap**: Required on Windows for Scapy functionality
+- **Firewall**: May need to adjust firewall settings for network scanning
 
 ## 🖥️ GUI Overview
 
@@ -193,25 +288,99 @@ Trusted devices are stored in `whitelist.json`:
 
 ## 🛠️ Troubleshooting
 
-### Common Issues
+### Windows Issues
 
 #### Administrator Privileges
 - **Issue**: "Administrator privileges required"
-- **Solution**: Run as Administrator or use launcher.py
+- **Solution**: Right-click and "Run as administrator"
 
-#### Network Interface
+#### Npcap Not Found
+- **Issue**: "Npcap is required for network operations"
+- **Solution**: 
+  1. Download Npcap from https://npcap.com/
+  2. Install with "WinPcap API-compatible Mode"
+  3. Restart application as Administrator
+
+#### Network Interface Issues
 - **Issue**: "No network interface found"
-- **Solution**: Check network connections and select correct interface in settings
+- **Solution**: 
+  1. Check network adapter is enabled
+  2. Disable VPN temporarily
+  3. Select correct interface in Settings
+
+#### GUI Freezes
+- **Issue**: GUI becomes unresponsive during scans
+- **Solution**: Enhanced with progress bar - should be resolved in latest version
+
+---
+
+### Linux Issues
+
+#### Permission Denied
+- **Issue**: "Operation not permitted" or "Permission denied"
+- **Solution**: Use sudo for network operations
+  ```bash
+  sudo python3 gui_main.py
+  ```
+
+#### Packet Capture Issues
+- **Issue**: "Cannot open network interface"
+- **Solution**: Set capabilities or use sudo
+  ```bash
+  # Option 1: Use sudo (recommended)
+  sudo python3 gui_main.py
+  
+  # Option 2: Set capabilities
+  sudo setcap cap_net_raw,cap_net_admin=eip $(which python3)
+  python3 gui_main.py
+  ```
+
+#### GUI Display Issues
+- **Issue**: GUI doesn't display or X11 errors
+- **Solution**: 
+  ```bash
+  export DISPLAY=:0
+  sudo python3 gui_main.py
+  ```
 
 #### Missing Dependencies
-- **Issue**: Import errors
-- **Solution**: Install all requirements: `pip install -r requirements.txt`
+- **Issue**: Import errors or missing packages
+- **Solution**: Install system dependencies
+  ```bash
+  sudo apt install python3-tk libpcap-dev nmap
+  ```
+
+---
+
+### Cross-Platform Issues
+
+#### Python Version
+- **Issue**: "Python 3.8+ required"
+- **Solution**: Upgrade Python or use correct version
+  ```bash
+  python3 --version  # Should be 3.8+
+  ```
+
+#### Module Import Errors
+- **Issue**: "No module named 'scapy'" or similar
+- **Solution**: Install requirements
+  ```bash
+  pip install -r requirements.txt  # Windows
+  sudo pip3 install -r requirements.txt  # Linux
+  ```
 
 #### Scan Failures
-- **Issue**: "Scan failed" errors
-- **Solution**: Check network connectivity and firewall settings
+- **Issue**: "Scan failed" or network errors
+- **Solution**: 
+  1. Check network connectivity
+  2. Disable firewall temporarily
+  3. Verify network interface status
+  4. Run as Administrator/sudo
+
+---
 
 ### Debug Mode
+
 Enable debug logging in settings:
 ```json
 {
@@ -220,6 +389,32 @@ Enable debug logging in settings:
   }
 }
 ```
+
+### Log Files
+
+Check log files for detailed errors:
+- **Windows**: `logs/` directory in project folder
+- **Linux**: Same location, may need sudo to access
+
+### Getting Help
+
+1. **Run installation test**:
+   ```bash
+   python install.py          # Windows
+   sudo python3 install_linux.py  # Linux
+   ```
+
+2. **Check system requirements**:
+   ```bash
+   python --version
+   pip list | grep scapy
+   ```
+
+3. **Verify network access**:
+   ```bash
+   ip addr show  # Linux
+   ipconfig      # Windows
+   ```
 
 
 ## 📞 Support
