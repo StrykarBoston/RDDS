@@ -1,5 +1,5 @@
 
-# 🛡️ Rogue Detection & Defense System (RDDS) - GUI Version
+# 🛡️ Rogue Detection & Defense System (RDDS) -
 
 [![Installation](https://img.shields.io/badge/Installation-Windows%20%7C%20Linux-blue)](README.md#-installation)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-green)](requirements.txt)
