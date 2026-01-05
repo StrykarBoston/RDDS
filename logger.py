@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # logger.py
 
 import json
@@ -10,17 +11,28 @@ class SecurityLogger:
         self.log_dir = log_dir
         os.makedirs(log_dir, exist_ok=True)
     
-    def log_device(self, device):
-        """Log device discovery"""
-        log_file = os.path.join(self.log_dir, 'devices.json')
-        
-        log_entry = {
-            'timestamp': str(datetime.now()),
-            'device': device
-        }
-        
-        with open(log_file, 'a') as f:
-            f.write(json.dumps(log_entry) + '\n')
+    import os
+from datetime import datetime
+
+def log_device(self, device):
+    """Log device discovery with rotation"""
+    log_file = os.path.join(self.log_dir, 'devices.json')
+    
+    # Check file size and rotate if needed (10MB limit)
+    if os.path.exists(log_file) and os.path.getsize(log_file) > 10485760:
+        # Rotate log file
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_file = os.path.join(self.log_dir, f'devices_{timestamp}.json')
+        os.rename(log_file, backup_file)
+        print(f"[*] Log rotated to: {backup_file}")
+    
+    log_entry = {
+        'timestamp': str(datetime.now()),
+        'device': device
+    }
+    
+    with open(log_file, 'a') as f:
+        f.write(json.dumps(log_entry) + '\n')
     
     def log_alert(self, alert):
         """Log security alert"""

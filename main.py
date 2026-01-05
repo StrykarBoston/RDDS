@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # main.py - Enterprise Rogue Detection System
 
 import sys

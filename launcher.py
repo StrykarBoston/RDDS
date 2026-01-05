@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # launcher.py - GUI Launcher for RDDS
 
 import sys

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # rogue_ap_detector.py
 
 import subprocess

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # settings_config.py - Settings and Configuration Management
 
 import json

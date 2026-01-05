@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # attack_detector.py
 
 from scapy.all import ARP, sniff, wrpcap

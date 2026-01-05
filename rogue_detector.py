@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # rogue_detector.py
 
 import json
@@ -16,8 +17,21 @@ class RogueDetector:
         """Load trusted devices"""
         if os.path.exists(self.whitelist_file):
             with open(self.whitelist_file, 'r') as f:
-                return json.load(f)
+                data = json.load(f)
+                valid_devices = []
+                for device in data:
+                    if 'mac' in device and self._validate_mac(device['mac']):
+                        valid_devices.append(device)
+                    else:
+                        print(f"[!] WARNING: Invalid device entry: {device}")
+                return valid_devices
         return []
+    
+    def _validate_mac(self, mac):
+        """Validate MAC address format"""
+        import re
+        pattern = r'^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$'
+        return bool(re.match(pattern, mac))
     
     def save_whitelist(self):
         """Save whitelist to disk"""

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # gui_main.py - Modern GUI for Rogue Detection System
 
 import tkinter as tk
@@ -13,6 +14,7 @@ from attack_detector import AttackDetector
 from rogue_ap_detector import RogueAPDetector
 from logger import SecurityLogger
 from settings_config import SettingsManager, SettingsDialog
+from npcapy_check import check_npcap_installation, install_npcap_instructions
 
 class ModernRDDS_GUI:
     def __init__(self):
@@ -40,8 +42,9 @@ class ModernRDDS_GUI:
         # Setup GUI
         self.setup_gui()
         
-        # Check admin privileges
+        # Check admin privileges and Npcap
         self.check_admin_privileges()
+        self.check_npcap()
         
     def setup_styles(self):
         """Setup modern ttk styles"""
@@ -91,6 +94,22 @@ class ModernRDDS_GUI:
         # Configure root window
         self.root.configure(bg=self.colors['light'])
         
+    def check_npcap(self):
+        """Check Npcap installation"""
+        try:
+            installed, message = check_npcap_installation()
+            if not installed:
+                messagebox.showerror(
+                    "Npcap Required",
+                    f"Npcap is required for network operations:\n\n{message}\n\n{install_npcap_instructions()}"
+                )
+                self.root.quit()
+                return
+            else:
+                print(f"[*] Npcap check: {message}")
+        except Exception as e:
+            print(f"[!] Warning: Could not verify Npcap installation: {e}")
+            
     def check_admin_privileges(self):
         """Check if running with admin privileges"""
         try:
@@ -287,7 +306,8 @@ class ModernRDDS_GUI:
         # Progress bar
         self.scan_progress = ttk.Progressbar(
             control_frame,
-            mode='indeterminate'
+            mode='determinate',
+            maximum=100
         )
         self.scan_progress.pack(fill='x', padx=10, pady=(0, 10))
         
@@ -524,7 +544,7 @@ class ModernRDDS_GUI:
             
         # Update UI
         self.scan_button.config(text="⏸️ Scanning...", state='disabled')
-        self.scan_progress.start(10)
+        self.scan_progress['value'] = 0
         self.status_indicator.config(text="● Scanning...", fg=self.colors['warning'])
         self.update_status("Starting network scan...")
         
@@ -536,37 +556,61 @@ class ModernRDDS_GUI:
         self.root.after(100, self.check_scan_results)
         
     def _perform_scan(self):
-        """Perform the actual scan"""
+        """Perform the actual scan with progress updates"""
         try:
             # Step 1: Network discovery
+            self.scan_queue.put(("progress", 10))
             self.scan_queue.put(("status", "Discovering network devices..."))
             network_range = self.scanner.get_network_range()
+            
+            self.scan_queue.put(("progress", 30))
             devices = self.scanner.arp_scan(network_range)
             self.scan_queue.put(("status", f"Found {len(devices)} devices"))
             
             # Step 2: Rogue detection
+            self.scan_queue.put(("progress", 50))
             self.scan_queue.put(("status", "Analyzing for rogue devices..."))
             analyzed_devices, alerts = self.detector.analyze_network(devices)
             
             # Step 3: Wireless scan
+            self.scan_queue.put(("progress", 70))
             self.scan_queue.put(("status", "Scanning wireless networks..."))
-            wireless_networks = self.ap_detector.scan_wireless_networks_windows()
-            ap_alerts = self.ap_detector.detect_evil_twin(wireless_networks)
-            alerts.extend(ap_alerts)
+            try:
+                wireless_networks = self.ap_detector.scan_wireless_networks_windows()
+                ap_alerts = self.ap_detector.detect_evil_twin(wireless_networks)
+                alerts.extend(ap_alerts)
+            except Exception as wireless_error:
+                print(f"[!] Wireless scan failed: {wireless_error}")
+                self.scan_queue.put(("status", "Wireless scan failed - continuing..."))
+            
+            # Step 4: Final analysis
+            self.scan_queue.put(("progress", 90))
+            self.scan_queue.put(("status", "Finalizing analysis..."))
             
             # Send results
+            self.scan_queue.put(("progress", 100))
             self.scan_queue.put(("results", analyzed_devices, alerts))
             
         except Exception as e:
-            self.scan_queue.put(("error", str(e)))
+            error_msg = str(e)
+            if "Permission denied" in error_msg:
+                error_msg = "Insufficient privileges. Please run as Administrator."
+            elif "No such device" in error_msg:
+                error_msg = "Network interface not available. Check your connection."
+            self.scan_queue.put(("error", error_msg))
             
     def check_scan_results(self):
-        """Check for scan results"""
+        """Check for scan results with progress updates"""
         try:
             while not self.scan_queue.empty():
                 result = self.scan_queue.get_nowait()
                 
-                if result[0] == "status":
+                if result[0] == "progress":
+                    # Update progress bar if it's determinate
+                    if hasattr(self, 'scan_progress') and result[1] <= 100:
+                        self.scan_progress['value'] = result[1]
+                        
+                elif result[0] == "status":
                     self.update_status(result[1])
                     self.add_activity(f"🔍 {result[1]}")
                     
@@ -575,6 +619,7 @@ class ModernRDDS_GUI:
                     self.display_scan_results(analyzed_devices, alerts)
                     self.update_dashboard_stats(analyzed_devices)
                     self.scan_progress.stop()
+                    self.scan_progress['value'] = 100
                     self.scan_button.config(text="🚀 Start Full Scan", state='normal')
                     self.status_indicator.config(text="● Ready", fg=self.colors['success'])
                     self.update_status("Scan completed")
@@ -583,9 +628,11 @@ class ModernRDDS_GUI:
                 elif result[0] == "error":
                     messagebox.showerror("Scan Error", f"Scan failed: {result[1]}")
                     self.scan_progress.stop()
+                    self.scan_progress['value'] = 0
                     self.scan_button.config(text="🚀 Start Full Scan", state='normal')
                     self.status_indicator.config(text="● Error", fg=self.colors['danger'])
                     self.update_status("Scan failed")
+                    self.add_activity(f"❌ Scan failed: {result[1]}")
                     
         except queue.Empty:
             pass
@@ -593,6 +640,13 @@ class ModernRDDS_GUI:
         # Check again if scan is still running
         if self.current_scan_thread and self.current_scan_thread.is_alive():
             self.root.after(100, self.check_scan_results)
+        else:
+            # Ensure UI is reset if thread ended unexpectedly
+            if self.scan_button['state'] == 'disabled':
+                self.scan_progress.stop()
+                self.scan_progress['value'] = 0
+                self.scan_button.config(text="🚀 Start Full Scan", state='normal')
+                self.status_indicator.config(text="● Ready", fg=self.colors['success'])
             
     def display_scan_results(self, devices, alerts):
         """Display scan results in treeview"""
