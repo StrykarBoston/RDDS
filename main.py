@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# main.py - Enterprise Rogue Detection System
+# main_clean.py - Enterprise Rogue Detection System without update feature
 
 import sys
 import time
@@ -35,7 +35,7 @@ def check_admin_privileges():
         print("  1. Right-click on Command Prompt or PowerShell")
         print("  2. Select 'Run as Administrator'")
         print("  3. Navigate to project folder")
-        print("  4. Run: python main.py")
+        print("  4. Run: python main_clean.py")
         print("\n" + "="*60)
         sys.exit(1)
     else:
@@ -303,124 +303,17 @@ class RogueDetectionSystem:
         except ValueError:
             print("❌ Please enter a valid number!")
     
-    def check_for_updates_cli(self):
-        """Check for software updates in CLI with improved error handling"""
-        try:
-            import requests
-            
-            print("\n🔄 Checking for updates...")
-            
-            # Get current version
-            current_version = "1.0.0"
-            
-            # Test internet connectivity first
-            try:
-                print("[*] Testing internet connectivity...")
-                test_response = requests.get("https://www.google.com", timeout=5)
-                if test_response.status_code != 200:
-                    raise Exception("Internet connectivity test failed")
-                print("[*] Internet connectivity confirmed")
-            except Exception as e:
-                print(f"[!] Internet connectivity test failed: {e}")
-                print("\n❌ Unable to connect to the internet.")
-                print("Please check your internet connection and try again.")
-                print("If you're behind a proxy or firewall, you may need to:")
-                print("1. Configure your proxy settings")
-                print("2. Allow this application through your firewall")
-                print("3. Check if GitHub.com is accessible")
-                return
-            
-            # Check GitHub repository for latest version
-            repo_url = "https://api.github.com/repos/StrykarBoston/RDDS/releases/latest"
-            
-            try:
-                print(f"[*] Checking GitHub API: {repo_url}")
-                response = requests.get(repo_url, timeout=15)
-                print(f"[*] GitHub API response status: {response.status_code}")
-                
-                if response.status_code == 200:
-                    release_data = response.json()
-                    latest_version = release_data['tag_name'].lstrip('v')
-                    download_url = release_data.get('zipball_url')
-                    
-                    print(f"[*] Current version: {current_version}")
-                    print(f"[*] Latest version: {latest_version}")
-                    
-                    if latest_version > current_version:
-                        print(f"\n🎉 Update Available!")
-                        print(f"Current version: {current_version}")
-                        print(f"Latest version: {latest_version}")
-                        print(f"\nRelease notes:")
-                        print(release_data.get('body', 'No release notes available.'))
-                        
-                        choice = input(f"\nWould you like to download the update? (y/N): ").strip().lower()
-                        
-                        if choice == 'y' and download_url:
-                            self.download_update_cli(download_url, latest_version)
-                        else:
-                            print("[*] Update download cancelled.")
-                    else:
-                        print(f"✅ You are running the latest version ({current_version})")
-                elif response.status_code == 403:
-                    print("\n❌ GitHub API rate limit exceeded.")
-                    print("Please try again later or visit:")
-                    print("https://github.com/StrykarBoston/RDDS/releases")
-                elif response.status_code == 404:
-                    print("\n❌ The RDDS repository was not found on GitHub.")
-                    print("Please check the repository name or visit:")
-                    print("https://github.com/StrykarBoston/RDDS")
-                else:
-                    print(f"\n❌ GitHub API returned status {response.status_code}.")
-                    print("Please check your internet connection and try again.")
-                    print("You can also check for updates manually at:")
-                    print("https://github.com/StrykarBoston/RDDS/releases")
-                    
-            except requests.exceptions.Timeout:
-                print("\n❌ Request to GitHub API timed out.")
-                print("Please check your internet connection and try again.")
-            except requests.exceptions.ConnectionError as e:
-                print(f"\n❌ Failed to connect to GitHub API.")
-                print(f"Error: {str(e)}")
-                print("Please check your internet connection, proxy settings, or firewall.")
-            except requests.RequestException as e:
-                print(f"\n❌ Failed to check for updates: {str(e)}")
-                
-        except ImportError:
-            print("\n📦 Update Check")
-            print("Automatic update checking requires the 'requests' library.")
-            print("To install: pip install requests")
-            print("\nAlternatively, visit:")
-            print("https://github.com/StrykarBoston/RDDS/releases")
-            print("to check for updates manually.")
-    
-    def download_update_cli(self, download_url, version):
-        """Download update in CLI"""
-        try:
-            import requests
-            
-            print(f"\n⬇️  Downloading RDDS v{version}...")
-            
-            response = requests.get(download_url, stream=True)
-            response.raise_for_status()
-            
-            # Save to temporary file
-            temp_file = f"RDDS_v{version}.zip"
-            total_size = int(response.headers.get('content-length', 0))
-            downloaded = 0
-            
-            with open(temp_file, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
-                    downloaded += len(chunk)
-                    if total_size > 0:
-                        progress = (downloaded / total_size) * 100
-                        print(f"\rProgress: {progress:.1f}%", end='', flush=True)
-            
-            print(f"\n✅ Update downloaded to {temp_file}")
-            print("Please extract the zip file and replace the current installation.")
-            
-        except Exception as e:
-            print(f"\n❌ Failed to download update: {str(e)}")
+    def show_manual_update_info(self):
+        """Show manual update instructions"""
+        print("\n📥 Manual Update Instructions")
+        print("="*50)
+        print("To check for updates manually:")
+        print("1. Visit: https://github.com/StrykarBoston/RDDS/releases")
+        print("2. Download the latest version")
+        print("3. Extract the zip file")
+        print("4. Replace the current installation")
+        print(f"\nCurrent version: 1.0.0")
+        print("="*50)
     
     def interactive_menu(self):
         """Interactive CLI menu with back button functionality"""
@@ -434,8 +327,8 @@ class RogueDetectionSystem:
             print("4. Add Device to Whitelist")
             print("5. Edit Device in Whitelist")
             print("6. Remove Device from Whitelist")
-            print("7. Check for Updates")
-            print("8. Generate Report")
+            print("7. Generate Report")
+            print("8. Manual Update Instructions")
             print("9. Exit")
             
             choice = input("\nSelect option (or 'back' to return): ").strip()
@@ -471,10 +364,10 @@ class RogueDetectionSystem:
                 self.remove_device_from_whitelist()
                 
             elif choice == '7':
-                self.check_for_updates_cli()
+                self.generate_report_interactive()
                 
             elif choice == '8':
-                self.generate_report_interactive()
+                self.show_manual_update_info()
                 
             elif choice == '9':
                 print("\n👋 Exiting...")
