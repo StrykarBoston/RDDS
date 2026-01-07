@@ -39,6 +39,11 @@ class ModernRDDS_GUI:
         self.monitoring = False
         self.current_scan_thread = None
         
+        # Data storage for reports
+        self._last_devices = []
+        self._last_alerts = []
+        self._monitoring_alerts = []  # Store monitoring alerts separately
+        
         # Setup GUI
         self.setup_gui()
         
@@ -449,6 +454,15 @@ class ModernRDDS_GUI:
             style='Primary.TButton'
         )
         self.monitor_button.pack(side='left', padx=5)
+        
+        # Clear alerts button
+        clear_button = ttk.Button(
+            controls_inner,
+            text="🗑️ Clear Alerts",
+            command=self.clear_monitoring_alerts,
+            style='Danger.TButton'
+        )
+        clear_button.pack(side='left', padx=5)
         
         # Duration entry
         tk.Label(controls_inner, text="Duration (s):", bg='white', fg=self.colors['text']).pack(side='left', padx=(20, 5))
@@ -934,6 +948,14 @@ class ModernRDDS_GUI:
             self.add_activity(f"🗑️ Removed device from whitelist: {mac}")
             messagebox.showinfo("Success", f"Device {mac} removed from whitelist!")
         
+    def clear_monitoring_alerts(self):
+        """Clear monitoring alerts and storage"""
+        self._monitoring_alerts = []
+        self.alerts_text.config(state='normal')
+        self.alerts_text.delete('1.0', 'end')
+        self.alerts_text.config(state='disabled')
+        self.add_activity("🗑️ Cleared monitoring alerts")
+        
     def toggle_monitoring(self):
         """Toggle real-time monitoring"""
         if not self.monitoring:
@@ -942,6 +964,12 @@ class ModernRDDS_GUI:
                 if duration <= 0:
                     messagebox.showerror("Error", "Duration must be greater than 0!")
                     return
+                    
+                # Clear previous monitoring alerts
+                self._monitoring_alerts = []
+                self.alerts_text.config(state='normal')
+                self.alerts_text.delete('1.0', 'end')
+                self.alerts_text.config(state='disabled')
                     
                 self.monitoring = True
                 self.monitor_button.config(text="⏹️ Stop Monitoring", style='Danger.TButton')
@@ -964,7 +992,7 @@ class ModernRDDS_GUI:
             self.monitor_button.config(text="▶️ Start Monitoring", style='Primary.TButton')
             self.monitor_status.config(text="⏸️ Monitoring Stopped", fg=self.colors['text'])
             self.status_indicator.config(text="● Ready", fg=self.colors['success'])
-            self.add_activity("⏹️ Stopped monitoring")
+            self.add_activity(f"⏹️ Stopped monitoring - captured {len(self._monitoring_alerts)} alerts")
             
     def _perform_monitoring(self, duration):
         """Perform real-time monitoring"""
@@ -983,7 +1011,7 @@ class ModernRDDS_GUI:
             self.root.after(0, self.toggle_monitoring)
             
     def _add_attack_alert(self, alert):
-        """Add attack alert to display"""
+        """Add attack alert to display and storage"""
         timestamp = datetime.now().strftime("%H:%M:%S")
         alert_text = f"[{timestamp}] 🚨 [{alert['severity']}] {alert['type']}: {alert['message']}\n"
         
@@ -991,6 +1019,9 @@ class ModernRDDS_GUI:
         self.alerts_text.insert('end', alert_text)
         self.alerts_text.see('end')
         self.alerts_text.config(state='disabled')
+        
+        # Store alert for report generation
+        self._monitoring_alerts.append(alert)
         
         self.add_activity(f"🚨 Attack detected: {alert['type']}")
         
@@ -1018,6 +1049,11 @@ class ModernRDDS_GUI:
             if not devices:
                 devices = getattr(self, '_last_devices', [])
                 alerts = getattr(self, '_last_alerts', [])
+            
+            # Include monitoring alerts
+            if hasattr(self, '_monitoring_alerts') and self._monitoring_alerts:
+                alerts.extend(self._monitoring_alerts)
+                self.add_activity(f"📊 Including {len(self._monitoring_alerts)} monitoring alerts in report")
                 
             # If still no data, run a quick scan
             if not devices and not alerts:
@@ -1026,7 +1062,8 @@ class ModernRDDS_GUI:
                     # Run a minimal scan
                     network_range = self.scanner.get_network_range()
                     scanned_devices = self.scanner.arp_scan(network_range)
-                    devices, alerts = self.detector.analyze_network(scanned_devices)
+                    devices, scan_alerts = self.detector.analyze_network(scanned_devices)
+                    alerts.extend(scan_alerts)
                     self._last_devices = devices
                     self._last_alerts = alerts
                     self.add_activity(f"✅ Quick scan found {len(devices)} devices")
@@ -1046,6 +1083,7 @@ class ModernRDDS_GUI:
                     self.add_activity("📝 Using demo data for report")
                     
             # Generate report
+            self.add_activity("📊 Generating security report...")
             report_file = self.logger.generate_report(devices, alerts)
             
             # Display report content
@@ -1058,7 +1096,8 @@ class ModernRDDS_GUI:
             self.report_text.config(state='disabled')
             
             self.add_activity(f"📊 Report generated: {report_file}")
-            messagebox.showinfo("Report Generated", f"Security report saved to:\n{report_file}")
+            self.add_activity(f"📊 Report includes {len(devices)} devices and {len(alerts)} alerts")
+            messagebox.showinfo("Report Generated", f"Security report saved to:\n{report_file}\n\nReport includes {len(devices)} devices and {len(alerts)} alerts")
             
         except Exception as e:
             error_msg = f"Failed to generate report: {str(e)}"
