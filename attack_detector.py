@@ -16,7 +16,7 @@ class AttackDetector:
         print(f"[*] AttackDetector initialized for {self.platform}")
     
     def detect_arp_poisoning(self, packet):
-        """Detect ARP spoofing/poisoning"""
+        """Detect ARP poisoning attacks"""
         if packet.haslayer(ARP):
             arp_layer = packet[ARP]
             
@@ -33,14 +33,52 @@ class AttackDetector:
                             'source_ip': src_ip,
                             'old_mac': self.arp_cache[src_ip],
                             'new_mac': src_mac,
-                            'message': f"ARP poisoning detected! IP {src_ip} MAC changed",
+                            'message': f"MAC address changed from {self.arp_cache[src_ip]} to {src_mac}",
                             'timestamp': time.time()
                         }
                         self.alerts.append(alert)
-                        print(f" [CRITICAL] ARP Poisoning: {src_ip}")
+                        print(f"\n🚨 [CRITICAL] ARP Poisoning: {src_ip}")
+                        print(f"   MAC address changed from {self.arp_cache[src_ip]} to {src_mac}")
+                        print(f"   Time: {time.strftime('%H:%M:%S')}")
                         return alert
                 
                 self.arp_cache[src_ip] = src_mac
+        
+        return None
+    
+    def detect_mac_spoofing(self, packet):
+        """Detect MAC address spoofing by monitoring multiple MACs for same IP"""
+        if packet.haslayer(ARP):
+            arp_layer = packet[ARP]
+            
+            if arp_layer.op in [1, 2]:  # ARP Request or Reply
+                src_ip = arp_layer.psrc
+                src_mac = arp_layer.hwsrc
+                
+                # Track MAC addresses seen for each IP
+                if src_ip not in self.mac_tracker:
+                    self.mac_tracker[src_ip] = {'macs': set(), 'first_seen': time.time()}
+                
+                self.mac_tracker[src_ip]['macs'].add(src_mac)
+                
+                # If multiple MACs seen for same IP within short time
+                if len(self.mac_tracker[src_ip]['macs']) > 1:
+                    time_diff = time.time() - self.mac_tracker[src_ip]['first_seen']
+                    if time_diff < 60:  # Within 1 minute
+                        alert = {
+                            'type': 'MAC_SPOOFING',
+                            'severity': 'CRITICAL',
+                            'source_ip': src_ip,
+                            'mac_addresses': list(self.mac_tracker[src_ip]['macs']),
+                            'message': f"MAC spoofing detected! IP {src_ip} using multiple MAC addresses",
+                            'timestamp': time.time()
+                        }
+                        self.alerts.append(alert)
+                        print(f"\n🚨 [CRITICAL] MAC Spoofing: {src_ip}")
+                        print(f"   Device {src_ip} shows signs of MAC address spoofing")
+                        print(f"   MAC addresses seen: {list(self.mac_tracker[src_ip]['macs'])}")
+                        print(f"   Time: {time.strftime('%H:%M:%S')}")
+                        return alert
         
         return None
     
@@ -85,6 +123,8 @@ class AttackDetector:
         """Start real-time attack monitoring with improved error handling"""
         print(f"[*] Starting attack detection on {interface}...")
         print(f"[*] Monitoring for {duration} seconds...")
+        print(f"[*] Press Ctrl+C to stop early")
+        print("="*60)
         
         try:
             # Test interface availability
@@ -95,16 +135,27 @@ class AttackDetector:
                 print(f"[!] Available interfaces: {list(interfaces.keys())}")
                 return []
             
-            # Platform-specific timeout adjustment
-            actual_timeout = duration * 1.5  # Add buffer time
+            # Clear previous alerts
+            self.alerts = []
+            self.arp_cache = {}
+            self.arp_requests = defaultdict(list)
+            self.mac_tracker = {}
+            
+            print(f"[*] Monitoring interface: {interface}")
+            print(f"[*] Waiting for network activity...")
             
             def packet_handler(pkt):
                 try:
-                    alert1 = self.detect_arp_poisoning(pkt)
-                    alert2 = self.detect_arp_flood(pkt)
+                    # Check all attack types
+                    alert1 = self.detect_mac_spoofing(pkt)
+                    alert2 = self.detect_arp_poisoning(pkt)
+                    alert3 = self.detect_arp_flood(pkt)
                     
-                    if alert1 or alert2:
+                    # Print immediate feedback for any detection
+                    if alert1 or alert2 or alert3:
+                        print("\n" + "="*50)
                         print(f"[!] Attack detected at {time.strftime('%H:%M:%S')}")
+                        print("="*50)
                 except Exception as e:
                     print(f"[!] Error processing packet: {e}")
             
@@ -114,14 +165,27 @@ class AttackDetector:
             packets = sniff(
                 iface=interface, 
                 prn=packet_handler, 
-                timeout=actual_timeout, 
+                timeout=duration, 
                 store=False,
                 stop_filter=lambda x: False  # Don't stop early
             )
             
-            print(f"[*] Monitoring completed. Captured packets processed.")
-            print(f"[*] Generated {len(self.alerts)} alerts")
+            print("\n" + "="*60)
+            print(f"[*] Monitoring completed.")
+            print(f"[*] Total alerts generated: {len(self.alerts)}")
             
+            if self.alerts:
+                print("\n[*] SUMMARY OF DETECTED ATTACKS:")
+                for i, alert in enumerate(self.alerts, 1):
+                    print(f"  {i}. [{alert['severity']}] {alert['type']}: {alert['message']}")
+            else:
+                print("\n[*] No attacks detected during monitoring period.")
+                print("[*] Make sure:")
+                print("    - You are generating network traffic")
+                print("    - Kali VM is on same network")
+                print("    - Interface is correct")
+            
+            print("="*60)
             return self.alerts
             
         except KeyboardInterrupt:

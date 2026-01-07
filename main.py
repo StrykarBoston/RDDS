@@ -45,8 +45,31 @@ def check_admin_privileges():
 # MAIN APPLICATION CLASS
 # ============================================
 class RogueDetectionSystem:
-    def __init__(self):
-        self.scanner = NetworkScanner()
+    def __init__(self, interface=None):
+        # Allow interface selection or auto-detect
+        if interface is None:
+            # Ask user if they want to select interface
+            print("\n" + "="*60)
+            print("🔌 NETWORK INTERFACE SELECTION")
+            print("="*60)
+            choice = input("Do you want to select network interface manually? (y/N): ").strip().lower()
+            
+            if choice == 'y':
+                # Interactive interface selection
+                temp_scanner = NetworkScanner()
+                selected_interface = temp_scanner.select_interface_interactive()
+                if selected_interface:
+                    self.scanner = NetworkScanner(selected_interface)
+                else:
+                    print("[*] Using auto-detected interface")
+                    self.scanner = NetworkScanner()
+            else:
+                # Auto-detect
+                self.scanner = NetworkScanner()
+        else:
+            # Use specified interface
+            self.scanner = NetworkScanner(interface)
+            
         self.detector = RogueDetector()
         self.attack_detector = AttackDetector()
         self.ap_detector = RogueAPDetector()
@@ -62,9 +85,34 @@ class RogueDetectionSystem:
     def run_full_scan(self):
         """Execute complete security scan"""
         print("\n[1/4] 🔍 Discovering network devices...")
+        
+        # Show current interface info
+        print(f"[*] Using interface: {self.scanner.interface}")
+        
         network_range = self.scanner.get_network_range()
+        print(f"[*] Scanning network range: {network_range}")
+        
         devices = self.scanner.arp_scan(network_range)
         print(f"      ✓ Found {len(devices)} devices")
+        
+        if not devices:
+            print("\n⚠️  No devices found! This could be due to:")
+            print("   1. Wrong network interface selected")
+            print("   2. Insufficient privileges (run as Administrator/root)")
+            print("   3. Network configuration issues")
+            print("   4. Firewall blocking ARP requests")
+            
+            choice = input("\nWould you like to try a different interface? (y/N): ").strip().lower()
+            if choice == 'y':
+                # Re-initialize scanner with new interface
+                temp_scanner = NetworkScanner()
+                selected_interface = temp_scanner.select_interface_interactive()
+                if selected_interface:
+                    print(f"[*] Switching to interface: {selected_interface}")
+                    self.scanner = NetworkScanner(selected_interface)
+                    network_range = self.scanner.get_network_range()
+                    devices = self.scanner.arp_scan(network_range)
+                    print(f"      ✓ Found {len(devices)} devices with new interface")
         
         print("\n[2/4] 🕵️  Analyzing for rogue devices...")
         analyzed_devices, alerts = self.detector.analyze_network(devices)

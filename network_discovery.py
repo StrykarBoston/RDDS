@@ -18,13 +18,72 @@ class NetworkScanner:
         print(f"[*] Platform detected: {self.platform}")
         print(f"[*] Using interface: {self.interface}")
     
-    def get_default_interface(self):
+    def list_available_interfaces(self):
+        """List all available network interfaces with details"""
+        interfaces = psutil.net_if_addrs()
+        print("\n" + "="*60)
+        print("📡 AVAILABLE NETWORK INTERFACES")
+        print("="*60)
+        
+        interface_list = []
+        for i, (name, addrs) in enumerate(interfaces.items(), 1):
+            ipv4_addr = None
+            mac_addr = None
+            
+            for addr in addrs:
+                if addr.family == socket.AF_INET and not addr.address.startswith('127.'):
+                    ipv4_addr = addr.address
+                elif addr.family == psutil.AF_LINK:
+                    mac_addr = addr.address
+            
+            if ipv4_addr:  # Only show interfaces with IPv4
+                interface_list.append((name, ipv4_addr, mac_addr))
+                print(f"{i}. {name:15} | IP: {ipv4_addr:15} | MAC: {mac_addr or 'Unknown'}")
+        
+        return interface_list
+    
+    def select_interface_interactive(self):
+        """Let user select interface interactively"""
+        interface_list = self.list_available_interfaces()
+        
+        if not interface_list:
+            print("\n❌ No network interfaces found!")
+            return None
+        
+        while True:
+            try:
+                choice = input(f"\nSelect interface (1-{len(interface_list)}) or press Enter for auto: ").strip()
+                
+                if not choice:
+                    # Auto-select best interface
+                    selected = self.get_default_interface()
+                    print(f"[*] Auto-selected interface: {selected}")
+                    return selected
+                
+                choice_idx = int(choice) - 1
+                if 0 <= choice_idx < len(interface_list):
+                    selected = interface_list[choice_idx][0]
+                    print(f"[*] Selected interface: {selected}")
+                    return selected
+                else:
+                    print(f"❌ Please enter a number between 1 and {len(interface_list)}")
+            except ValueError:
+                print("❌ Please enter a valid number")
+            except KeyboardInterrupt:
+                print("\n[*] Interface selection cancelled")
+                return None
+    
+    def get_default_interface(self, auto_select=True):
         """Get default network interface with platform-specific logic"""
         try:
             # Method 1: Try psutil first
             interfaces = psutil.net_if_addrs()
             if not interfaces:
                 raise Exception("No network interfaces found")
+            
+            if not auto_select:
+                # Interactive mode - let user choose
+                return self.select_interface_interactive()
             
             # Platform-specific interface selection
             if self.platform == "windows":
@@ -36,51 +95,55 @@ class NetworkScanner:
             print(f"[!] Error getting default interface: {e}")
             # Platform-specific fallbacks
             if self.platform == "windows":
-                fallback = "Ethernet"
+                fallback = "Wi-Fi"  # Changed from Ethernet to Wi-Fi
             else:
-                fallback = "eth0"
+                fallback = "wlan0"  # Changed from eth0 to wlan0
             print(f"[!] Using fallback interface: {fallback}")
             return fallback
     
     def _get_windows_interface(self, interfaces):
-        """Get Windows interface with IPv4 connectivity"""
-        # Prioritize Ethernet, Wi-Fi, then others
-        priority_names = ['Ethernet', 'Wi-Fi', 'Local Area Connection', 'Wireless']
+        """Get Windows interface with IPv4 connectivity - prioritize Wi-Fi"""
+        # Prioritize Wi-Fi first, then Ethernet, then others
+        priority_names = ['Wi-Fi', 'Wireless', 'WLAN', 'WiFi', 'Ethernet', 'Local Area Connection']
+        
+        print(f"[*] Available Windows interfaces: {list(interfaces.keys())}")
         
         for priority in priority_names:
             if priority in interfaces:
                 for addr in interfaces[priority]:
                     if addr.family == socket.AF_INET and not addr.address.startswith('127.'):
-                        print(f"[*] Found Windows interface: {priority}")
+                        print(f"[*] Found Windows interface: {priority} ({addr.address})")
                         return priority
         
         # Fallback to any interface with IPv4
         for name, addrs in interfaces.items():
             for addr in addrs:
                 if addr.family == socket.AF_INET and not addr.address.startswith('127.'):
-                    print(f"[*] Using fallback Windows interface: {name}")
+                    print(f"[*] Using fallback Windows interface: {name} ({addr.address})")
                     return name
         
         raise Exception("No suitable Windows interface found")
     
     def _get_linux_interface(self, interfaces):
-        """Get Linux interface with IPv4 connectivity"""
-        # Prioritize common Linux interface names
-        priority_names = ['eth0', 'wlan0', 'enp0s3', 'ens33', 'wlp2s0']
+        """Get Linux interface with IPv4 connectivity - prioritize Wi-Fi"""
+        # Prioritize wireless interfaces first
+        priority_names = ['wlan0', 'wlp2s0', 'wlan1', 'wlp3s0', 'wifi0', 'eth0', 'enp0s3', 'ens33']
+        
+        print(f"[*] Available Linux interfaces: {list(interfaces.keys())}")
         
         for priority in priority_names:
             if priority in interfaces:
                 for addr in interfaces[priority]:
                     if addr.family == socket.AF_INET and not addr.address.startswith('127.'):
-                        print(f"[*] Found Linux interface: {priority}")
+                        print(f"[*] Found Linux interface: {priority} ({addr.address})")
                         return priority
         
-        # Fallback to any interface with IPv4
+        # Fallback to any non-loopback interface with IPv4
         for name, addrs in interfaces.items():
-            if not name.startswith('lo') and not name.startswith('docker'):
+            if not name.startswith('lo') and not name.startswith('docker') and not name.startswith('virbr'):
                 for addr in addrs:
                     if addr.family == socket.AF_INET and not addr.address.startswith('127.'):
-                        print(f"[*] Using fallback Linux interface: {name}")
+                        print(f"[*] Using fallback Linux interface: {name} ({addr.address})")
                         return name
         
         raise Exception("No suitable Linux interface found")
