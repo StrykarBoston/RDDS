@@ -234,6 +234,9 @@ class ModernRDDS_GUI:
         # Stats cards
         self.create_stats_cards(main_frame)
         
+        # Alert status bar
+        self.create_alert_status_bar(main_frame)
+        
         # Recent activity
         self.create_activity_panel(main_frame)
         
@@ -274,6 +277,26 @@ class ModernRDDS_GUI:
             
             # Store reference for updates
             self.stats_labels[title] = value_label
+            
+    def create_alert_status_bar(self, parent):
+        """Create alert status bar for dashboard"""
+        alert_frame = tk.Frame(parent, bg='white', relief='raised', bd=1)
+        alert_frame.pack(fill='x', pady=(0, 10))
+        
+        # Alert status label
+        self.alert_status_label = tk.Label(
+            alert_frame,
+            text="🚨 Alert Status: No Active Alerts",
+            font=('Segoe UI', 12, 'bold'),
+            bg='white',
+            fg=self.colors['success']
+        )
+        self.alert_status_label.pack(pady=10, padx=10, anchor='w')
+        
+    def update_alert_status(self, status_text):
+        """Update alert status bar"""
+        if hasattr(self, 'alert_status_label'):
+            self.alert_status_label.config(text=status_text)
             
     def create_activity_panel(self, parent):
         """Create recent activity panel"""
@@ -970,6 +993,9 @@ class ModernRDDS_GUI:
                 self.alerts_text.config(state='normal')
                 self.alerts_text.delete('1.0', 'end')
                 self.alerts_text.config(state='disabled')
+                
+                # Update alert status
+                self.update_alert_status("🚨 Alert Status: Monitoring Active")
                     
                 self.monitoring = True
                 self.monitor_button.config(text="⏹️ Stop Monitoring", style='Danger.TButton')
@@ -992,6 +1018,13 @@ class ModernRDDS_GUI:
             self.monitor_button.config(text="▶️ Start Monitoring", style='Primary.TButton')
             self.monitor_status.config(text="⏸️ Monitoring Stopped", fg=self.colors['text'])
             self.status_indicator.config(text="● Ready", fg=self.colors['success'])
+            
+            # Update alert status
+            if len(self._monitoring_alerts) > 0:
+                self.update_alert_status(f"🚨 Alert Status: {len(self._monitoring_alerts)} Alerts Captured")
+            else:
+                self.update_alert_status("🚨 Alert Status: No Active Alerts")
+                
             self.add_activity(f"⏹️ Stopped monitoring - captured {len(self._monitoring_alerts)} alerts")
             
     def _perform_monitoring(self, duration):
@@ -1022,6 +1055,9 @@ class ModernRDDS_GUI:
         
         # Store alert for report generation
         self._monitoring_alerts.append(alert)
+        
+        # Update alert status bar
+        self.update_alert_status(f"🚨 Alert Status: {alert['severity']} - {alert['type']}")
         
         self.add_activity(f"🚨 Attack detected: {alert['type']}")
         
