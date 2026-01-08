@@ -15,12 +15,12 @@ from rogue_ap_detector import RogueAPDetector
 from logger import SecurityLogger
 from deep_packet_inspector import DeepPacketInspector
 from enhanced_rogue_ap_detector import EnhancedRogueAPDetector
-from iot_profiler import IoTProfiler
 from dhcp_security import DHCPSecurityMonitor
 from network_traffic_analyzer import NetworkTrafficAnalyzer
 from ssl_tls_monitor import SSLTLSMonitor
 from advanced_attack_detector import AdvancedAttackDetector
-from settings_config import SettingsManager, SettingsDialog
+from settings_manager import SettingsManager
+from iot_profiler import IoTProfiler
 from npcapy_check import check_npcap_installation, install_npcap_instructions
 
 class ModernRDDS_GUI:
@@ -34,6 +34,7 @@ class ModernRDDS_GUI:
         self.setup_styles()
         
         # Initialize components
+        self.settings_manager = SettingsManager()
         self.scanner = NetworkScanner()
         self.detector = RogueDetector()
         self.attack_detector = AttackDetector()
@@ -1611,10 +1612,270 @@ class ModernRDDS_GUI:
             messagebox.showerror("Report Error", error_msg)
             
     def open_settings(self):
-        """Open settings dialog"""
-        settings_dialog = SettingsDialog(self.root, self.settings_manager)
-        settings_dialog.show()
+        """Open advanced settings dialog"""
+        self.show_settings_dialog()
+    
+    def show_settings_dialog(self):
+        """Show advanced settings configuration dialog"""
+        settings_window = tk.Toplevel(self.root)
+        settings_window.title("⚙️ Advanced Settings")
+        settings_window.geometry("800x600")
+        settings_window.transient(self.root)
+        settings_window.grab_set()
         
+        # Create notebook for categories
+        notebook = ttk.Notebook(settings_window)
+        notebook.pack(fill='both', expand=True, padx=10, pady=10)
+        
+        # Network Discovery Settings
+        self.create_network_discovery_settings_tab(notebook)
+        
+        # SSL Monitoring Settings
+        self.create_ssl_monitoring_settings_tab(notebook)
+        
+        # Advanced Attack Detection Settings
+        self.create_advanced_attack_detection_settings_tab(notebook)
+        
+        # General Settings
+        self.create_general_settings_tab(notebook)
+        
+        # Buttons
+        button_frame = tk.Frame(settings_window)
+        button_frame.pack(fill='x', padx=10, pady=10)
+        
+        ttk.Button(button_frame, text="Save", command=self.save_all_settings).pack(side='right', padx=5)
+        ttk.Button(button_frame, text="Reset to Defaults", command=self.reset_settings_to_defaults_gui).pack(side='right', padx=5)
+        ttk.Button(button_frame, text="Cancel", command=settings_window.destroy).pack(side='right', padx=5)
+    
+    def create_network_discovery_settings_tab(self, notebook):
+        """Create network discovery settings tab"""
+        frame = ttk.Frame(notebook)
+        notebook.add(frame, text="Network Discovery")
+        
+        settings = self.settings_manager.get_category_settings("network_discovery")
+        
+        # Scan Timeout
+        ttk.Label(frame, text="Scan Timeout (seconds):").grid(row=0, column=0, sticky='w', padx=10, pady=5)
+        self.scan_timeout_var = tk.IntVar(value=settings['scan_timeout'])
+        ttk.Entry(frame, textvariable=self.scan_timeout_var, width=20).grid(row=0, column=1, padx=10, pady=5)
+        
+        # Max Threads
+        ttk.Label(frame, text="Max Threads:").grid(row=1, column=0, sticky='w', padx=10, pady=5)
+        self.max_threads_var = tk.IntVar(value=settings['max_threads'])
+        ttk.Entry(frame, textvariable=self.max_threads_var, width=20).grid(row=1, column=1, padx=10, pady=5)
+        
+        # Ping Timeout
+        ttk.Label(frame, text="Ping Timeout (seconds):").grid(row=2, column=0, sticky='w', padx=10, pady=5)
+        self.ping_timeout_var = tk.IntVar(value=settings['ping_timeout'])
+        ttk.Entry(frame, textvariable=self.ping_timeout_var, width=20).grid(row=2, column=1, padx=10, pady=5)
+        
+        # ARP Timeout
+        ttk.Label(frame, text="ARP Timeout (seconds):").grid(row=3, column=0, sticky='w', padx=10, pady=5)
+        self.arp_timeout_var = tk.IntVar(value=settings['arp_timeout'])
+        ttk.Entry(frame, textvariable=self.arp_timeout_var, width=20).grid(row=3, column=1, padx=10, pady=5)
+        
+        # Retry Count
+        ttk.Label(frame, text="Retry Count:").grid(row=4, column=0, sticky='w', padx=10, pady=5)
+        self.retry_count_var = tk.IntVar(value=settings['retry_count'])
+        ttk.Entry(frame, textvariable=self.retry_count_var, width=20).grid(row=4, column=1, padx=10, pady=5)
+        
+        # Scan Delay
+        ttk.Label(frame, text="Scan Delay (seconds):").grid(row=5, column=0, sticky='w', padx=10, pady=5)
+        self.scan_delay_var = tk.DoubleVar(value=settings['scan_delay'])
+        ttk.Entry(frame, textvariable=self.scan_delay_var, width=20).grid(row=5, column=1, padx=10, pady=5)
+    
+    def create_ssl_monitoring_settings_tab(self, notebook):
+        """Create SSL monitoring settings tab"""
+        frame = ttk.Frame(notebook)
+        notebook.add(frame, text="SSL Monitoring")
+        
+        settings = self.settings_manager.get_category_settings("ssl_monitoring")
+        
+        # Monitor Duration
+        ttk.Label(frame, text="Monitor Duration (seconds):").grid(row=0, column=0, sticky='w', padx=10, pady=5)
+        self.ssl_monitor_duration_var = tk.IntVar(value=settings['monitor_duration'])
+        ttk.Entry(frame, textvariable=self.ssl_monitor_duration_var, width=20).grid(row=0, column=1, padx=10, pady=5)
+        
+        # Connection Timeout
+        ttk.Label(frame, text="Connection Timeout (seconds):").grid(row=1, column=0, sticky='w', padx=10, pady=5)
+        self.ssl_connection_timeout_var = tk.IntVar(value=settings['connection_timeout'])
+        ttk.Entry(frame, textvariable=self.ssl_connection_timeout_var, width=20).grid(row=1, column=1, padx=10, pady=5)
+        
+        # Max Hosts
+        ttk.Label(frame, text="Max Hosts:").grid(row=2, column=0, sticky='w', padx=10, pady=5)
+        self.ssl_max_hosts_var = tk.IntVar(value=settings['max_hosts'])
+        ttk.Entry(frame, textvariable=self.ssl_max_hosts_var, width=20).grid(row=2, column=1, padx=10, pady=5)
+        
+        # Expiry Threshold
+        ttk.Label(frame, text="Expiry Threshold (days):").grid(row=3, column=0, sticky='w', padx=10, pady=5)
+        self.ssl_expiry_threshold_var = tk.IntVar(value=settings['expiry_threshold'])
+        ttk.Entry(frame, textvariable=self.ssl_expiry_threshold_var, width=20).grid(row=3, column=1, padx=10, pady=5)
+        
+        # Key Size Threshold
+        ttk.Label(frame, text="Key Size Threshold (bits):").grid(row=4, column=0, sticky='w', padx=10, pady=5)
+        self.ssl_key_size_var = tk.IntVar(value=settings['key_size_threshold'])
+        ttk.Entry(frame, textvariable=self.ssl_key_size_var, width=20).grid(row=4, column=1, padx=10, pady=5)
+        
+        # Check Revocation
+        ttk.Label(frame, text="Check Revocation:").grid(row=5, column=0, sticky='w', padx=10, pady=5)
+        self.ssl_check_revocation_var = tk.BooleanVar(value=settings['check_revocation'])
+        ttk.Checkbutton(frame, variable=self.ssl_check_revocation_var).grid(row=5, column=1, sticky='w', padx=10, pady=5)
+        
+        # Strict Validation
+        ttk.Label(frame, text="Strict Validation:").grid(row=6, column=0, sticky='w', padx=10, pady=5)
+        self.ssl_strict_validation_var = tk.BooleanVar(value=settings['strict_validation'])
+        ttk.Checkbutton(frame, variable=self.ssl_strict_validation_var).grid(row=6, column=1, sticky='w', padx=10, pady=5)
+    
+    def create_advanced_attack_detection_settings_tab(self, notebook):
+        """Create advanced attack detection settings tab"""
+        frame = ttk.Frame(notebook)
+        notebook.add(frame, text="Attack Detection")
+        
+        settings = self.settings_manager.get_category_settings("advanced_attack_detection")
+        
+        # Monitor Duration
+        ttk.Label(frame, text="Monitor Duration (seconds):").grid(row=0, column=0, sticky='w', padx=10, pady=5)
+        self.attack_monitor_duration_var = tk.IntVar(value=settings['monitor_duration'])
+        ttk.Entry(frame, textvariable=self.attack_monitor_duration_var, width=20).grid(row=0, column=1, padx=10, pady=5)
+        
+        # MAC Flood Threshold
+        ttk.Label(frame, text="MAC Flood Threshold (packets/sec):").grid(row=1, column=0, sticky='w', padx=10, pady=5)
+        self.mac_flood_threshold_var = tk.IntVar(value=settings['mac_flood_threshold'])
+        ttk.Entry(frame, textvariable=self.mac_flood_threshold_var, width=20).grid(row=1, column=1, padx=10, pady=5)
+        
+        # SYN Flood Threshold
+        ttk.Label(frame, text="SYN Flood Threshold (packets/sec):").grid(row=2, column=0, sticky='w', padx=10, pady=5)
+        self.syn_flood_threshold_var = tk.IntVar(value=settings['syn_flood_threshold'])
+        ttk.Entry(frame, textvariable=self.syn_flood_threshold_var, width=20).grid(row=2, column=1, padx=10, pady=5)
+        
+        # UDP Flood Threshold
+        ttk.Label(frame, text="UDP Flood Threshold (packets/sec):").grid(row=3, column=0, sticky='w', padx=10, pady=5)
+        self.udp_flood_threshold_var = tk.IntVar(value=settings['udp_flood_threshold'])
+        ttk.Entry(frame, textvariable=self.udp_flood_threshold_var, width=20).grid(row=3, column=1, padx=10, pady=5)
+        
+        # ICMP Flood Threshold
+        ttk.Label(frame, text="ICMP Flood Threshold (packets/sec):").grid(row=4, column=0, sticky='w', padx=10, pady=5)
+        self.icmp_flood_threshold_var = tk.IntVar(value=settings['icmp_flood_threshold'])
+        ttk.Entry(frame, textvariable=self.icmp_flood_threshold_var, width=20).grid(row=4, column=1, padx=10, pady=5)
+        
+        # Port Scan Threshold
+        ttk.Label(frame, text="Port Scan Threshold (ports):").grid(row=5, column=0, sticky='w', padx=10, pady=5)
+        self.port_scan_threshold_var = tk.IntVar(value=settings['port_scan_threshold'])
+        ttk.Entry(frame, textvariable=self.port_scan_threshold_var, width=20).grid(row=5, column=1, padx=10, pady=5)
+        
+        # Enable Layer 2 Detection
+        ttk.Label(frame, text="Enable Layer 2 Detection:").grid(row=6, column=0, sticky='w', padx=10, pady=5)
+        self.enable_layer2_var = tk.BooleanVar(value=settings['enable_layer2_detection'])
+        ttk.Checkbutton(frame, variable=self.enable_layer2_var).grid(row=6, column=1, sticky='w', padx=10, pady=5)
+        
+        # Enable Layer 3 Detection
+        ttk.Label(frame, text="Enable Layer 3 Detection:").grid(row=7, column=0, sticky='w', padx=10, pady=5)
+        self.enable_layer3_var = tk.BooleanVar(value=settings['enable_layer3_detection'])
+        ttk.Checkbutton(frame, variable=self.enable_layer3_var).grid(row=7, column=1, sticky='w', padx=10, pady=5)
+        
+        # Enable Layer 4 Detection
+        ttk.Label(frame, text="Enable Layer 4 Detection:").grid(row=8, column=0, sticky='w', padx=10, pady=5)
+        self.enable_layer4_var = tk.BooleanVar(value=settings['enable_layer4_detection'])
+        ttk.Checkbutton(frame, variable=self.enable_layer4_var).grid(row=8, column=1, sticky='w', padx=10, pady=5)
+        
+        # Enable MITM Detection
+        ttk.Label(frame, text="Enable MITM Detection:").grid(row=9, column=0, sticky='w', padx=10, pady=5)
+        self.enable_mitm_var = tk.BooleanVar(value=settings['enable_mitm_detection'])
+        ttk.Checkbutton(frame, variable=self.enable_mitm_var).grid(row=9, column=1, sticky='w', padx=10, pady=5)
+    
+    def create_general_settings_tab(self, notebook):
+        """Create general settings tab"""
+        frame = ttk.Frame(notebook)
+        notebook.add(frame, text="General")
+        
+        settings = self.settings_manager.get_category_settings("general")
+        
+        # Log Level
+        ttk.Label(frame, text="Log Level:").grid(row=0, column=0, sticky='w', padx=10, pady=5)
+        self.log_level_var = tk.StringVar(value=settings['log_level'])
+        log_combo = ttk.Combobox(frame, textvariable=self.log_level_var, values=['DEBUG', 'INFO', 'WARNING', 'ERROR'], width=18)
+        log_combo.grid(row=0, column=1, padx=10, pady=5)
+        
+        # Auto Save
+        ttk.Label(frame, text="Auto Save:").grid(row=1, column=0, sticky='w', padx=10, pady=5)
+        self.auto_save_var = tk.BooleanVar(value=settings['auto_save'])
+        ttk.Checkbutton(frame, variable=self.auto_save_var).grid(row=1, column=1, sticky='w', padx=10, pady=5)
+        
+        # Save Interval
+        ttk.Label(frame, text="Save Interval (seconds):").grid(row=2, column=0, sticky='w', padx=10, pady=5)
+        self.save_interval_var = tk.IntVar(value=settings['save_interval'])
+        ttk.Entry(frame, textvariable=self.save_interval_var, width=20).grid(row=2, column=1, padx=10, pady=5)
+        
+        # Notification Enabled
+        ttk.Label(frame, text="Enable Notifications:").grid(row=3, column=0, sticky='w', padx=10, pady=5)
+        self.notification_var = tk.BooleanVar(value=settings['notification_enabled'])
+        ttk.Checkbutton(frame, variable=self.notification_var).grid(row=3, column=1, sticky='w', padx=10, pady=5)
+        
+        # Sound Alerts
+        ttk.Label(frame, text="Sound Alerts:").grid(row=4, column=0, sticky='w', padx=10, pady=5)
+        self.sound_alerts_var = tk.BooleanVar(value=settings['sound_alerts'])
+        ttk.Checkbutton(frame, variable=self.sound_alerts_var).grid(row=4, column=1, sticky='w', padx=10, pady=5)
+    
+    def save_all_settings(self):
+        """Save all settings from the dialog"""
+        try:
+            # Network Discovery Settings
+            self.settings_manager.set_setting("network_discovery", "scan_timeout", self.scan_timeout_var.get())
+            self.settings_manager.set_setting("network_discovery", "max_threads", self.max_threads_var.get())
+            self.settings_manager.set_setting("network_discovery", "ping_timeout", self.ping_timeout_var.get())
+            self.settings_manager.set_setting("network_discovery", "arp_timeout", self.arp_timeout_var.get())
+            self.settings_manager.set_setting("network_discovery", "retry_count", self.retry_count_var.get())
+            self.settings_manager.set_setting("network_discovery", "scan_delay", self.scan_delay_var.get())
+            
+            # SSL Monitoring Settings
+            self.settings_manager.set_setting("ssl_monitoring", "monitor_duration", self.ssl_monitor_duration_var.get())
+            self.settings_manager.set_setting("ssl_monitoring", "connection_timeout", self.ssl_connection_timeout_var.get())
+            self.settings_manager.set_setting("ssl_monitoring", "max_hosts", self.ssl_max_hosts_var.get())
+            self.settings_manager.set_setting("ssl_monitoring", "expiry_threshold", self.ssl_expiry_threshold_var.get())
+            self.settings_manager.set_setting("ssl_monitoring", "key_size_threshold", self.ssl_key_size_var.get())
+            self.settings_manager.set_setting("ssl_monitoring", "check_revocation", self.ssl_check_revocation_var.get())
+            self.settings_manager.set_setting("ssl_monitoring", "strict_validation", self.ssl_strict_validation_var.get())
+            
+            # Advanced Attack Detection Settings
+            self.settings_manager.set_setting("advanced_attack_detection", "monitor_duration", self.attack_monitor_duration_var.get())
+            self.settings_manager.set_setting("advanced_attack_detection", "mac_flood_threshold", self.mac_flood_threshold_var.get())
+            self.settings_manager.set_setting("advanced_attack_detection", "syn_flood_threshold", self.syn_flood_threshold_var.get())
+            self.settings_manager.set_setting("advanced_attack_detection", "udp_flood_threshold", self.udp_flood_threshold_var.get())
+            self.settings_manager.set_setting("advanced_attack_detection", "icmp_flood_threshold", self.icmp_flood_threshold_var.get())
+            self.settings_manager.set_setting("advanced_attack_detection", "port_scan_threshold", self.port_scan_threshold_var.get())
+            self.settings_manager.set_setting("advanced_attack_detection", "enable_layer2_detection", self.enable_layer2_var.get())
+            self.settings_manager.set_setting("advanced_attack_detection", "enable_layer3_detection", self.enable_layer3_var.get())
+            self.settings_manager.set_setting("advanced_attack_detection", "enable_layer4_detection", self.enable_layer4_var.get())
+            self.settings_manager.set_setting("advanced_attack_detection", "enable_mitm_detection", self.enable_mitm_var.get())
+            
+            # General Settings
+            self.settings_manager.set_setting("general", "log_level", self.log_level_var.get())
+            self.settings_manager.set_setting("general", "auto_save", self.auto_save_var.get())
+            self.settings_manager.set_setting("general", "save_interval", self.save_interval_var.get())
+            self.settings_manager.set_setting("general", "notification_enabled", self.notification_var.get())
+            self.settings_manager.set_setting("general", "sound_alerts", self.sound_alerts_var.get())
+            
+            messagebox.showinfo("Settings", "✅ Settings saved successfully!")
+            
+            # Close the dialog
+            for widget in self.root.winfo_children():
+                if isinstance(widget, tk.Toplevel) and widget.title() == "⚙️ Advanced Settings":
+                    widget.destroy()
+                    
+        except Exception as e:
+            messagebox.showerror("Error", f"❌ Failed to save settings: {e}")
+    
+    def reset_settings_to_defaults_gui(self):
+        """Reset settings to defaults (GUI version)"""
+        if messagebox.askyesno("Reset Settings", "⚠️ This will reset all settings to defaults. Continue?"):
+            self.settings_manager.reset_to_defaults()
+            messagebox.showinfo("Settings", "✅ Settings reset to defaults!")
+            
+            # Close the dialog
+            for widget in self.root.winfo_children():
+                if isinstance(widget, tk.Toplevel) and widget.title() == "⚙️ Advanced Settings":
+                    widget.destroy()
+    
     def check_for_updates(self):
         """Check for software updates with improved error handling"""
         try:

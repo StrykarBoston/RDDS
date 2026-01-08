@@ -4,18 +4,104 @@
 import sys
 import time
 import ctypes
-from network_discovery import NetworkScanner
-from rogue_detector import RogueDetector
-from attack_detector import AttackDetector
-from rogue_ap_detector import RogueAPDetector
-from logger import SecurityLogger
-from deep_packet_inspector import DeepPacketInspector
-from enhanced_rogue_ap_detector import EnhancedRogueAPDetector
-from iot_profiler import IoTProfiler
-from dhcp_security import DHCPSecurityMonitor
-from network_traffic_analyzer import NetworkTrafficAnalyzer
-from ssl_tls_monitor import SSLTLSMonitor
-from advanced_attack_detector import AdvancedAttackDetector
+
+# ============================================
+# IMPORT ALL REQUIRED MODULES
+# ============================================
+
+# Try to import all required modules with error handling
+try:
+    from network_discovery import NetworkScanner
+    print("✅ NetworkScanner imported")
+except ImportError as e:
+    print(f"❌ NetworkScanner import failed: {e}")
+    sys.exit(1)
+
+try:
+    from rogue_detector import RogueDetector
+    print("✅ RogueDetector imported")
+except ImportError as e:
+    print(f"❌ RogueDetector import failed: {e}")
+    sys.exit(1)
+
+try:
+    from attack_detector import AttackDetector
+    print("✅ AttackDetector imported")
+except ImportError as e:
+    print(f"❌ AttackDetector import failed: {e}")
+    sys.exit(1)
+
+try:
+    from rogue_ap_detector import RogueAPDetector
+    print("✅ RogueAPDetector imported")
+except ImportError as e:
+    print(f"❌ RogueAPDetector import failed: {e}")
+    sys.exit(1)
+
+try:
+    from enhanced_rogue_ap_detector import EnhancedRogueAPDetector
+    print("✅ EnhancedRogueAPDetector imported")
+except ImportError as e:
+    print(f"❌ EnhancedRogueAPDetector import failed: {e}")
+    sys.exit(1)
+
+try:
+    from logger import SecurityLogger
+    print("✅ SecurityLogger imported")
+except ImportError as e:
+    print(f"❌ SecurityLogger import failed: {e}")
+    sys.exit(1)
+
+try:
+    from deep_packet_inspector import DeepPacketInspector
+    print("✅ DeepPacketInspector imported")
+except ImportError as e:
+    print(f"❌ DeepPacketInspector import failed: {e}")
+    sys.exit(1)
+
+try:
+    from ssl_tls_monitor import SSLTLSMonitor
+    print("✅ SSLTLSMonitor imported")
+except ImportError as e:
+    print(f"❌ SSLTLSMonitor import failed: {e}")
+    sys.exit(1)
+
+try:
+    from settings_manager import SettingsManager
+    print("✅ SettingsManager imported")
+except ImportError as e:
+    print(f"❌ SettingsManager import failed: {e}")
+    sys.exit(1)
+
+try:
+    from advanced_attack_detector import AdvancedAttackDetector
+    print("✅ AdvancedAttackDetector imported")
+except ImportError as e:
+    print(f"❌ AdvancedAttackDetector import failed: {e}")
+    sys.exit(1)
+
+try:
+    from iot_profiler import IoTProfiler
+    print("✅ IoTProfiler imported")
+except ImportError as e:
+    print(f"❌ IoTProfiler import failed: {e}")
+    sys.exit(1)
+
+try:
+    from dhcp_security import DHCPSecurityMonitor
+    print("✅ DHCPSecurityMonitor imported")
+except ImportError as e:
+    print(f"❌ DHCPSecurityMonitor import failed: {e}")
+    sys.exit(1)
+
+try:
+    from network_traffic_analyzer import NetworkTrafficAnalyzer
+    print("✅ NetworkTrafficAnalyzer imported")
+except ImportError as e:
+    print(f"❌ NetworkTrafficAnalyzer import failed: {e}")
+    sys.exit(1)
+
+print("🎉 All modules imported successfully!")
 
 # ============================================
 # ADMINISTRATOR PRIVILEGES CHECK
@@ -78,6 +164,7 @@ class RogueDetectionSystem:
             self.scanner = NetworkScanner(interface)
             
         # Initialize components
+        self.settings_manager = SettingsManager()
         self.detector = RogueDetector()
         self.attack_detector = AttackDetector()
         self.ap_detector = RogueAPDetector()
@@ -733,9 +820,10 @@ class RogueDetectionSystem:
             print("10. Add Device to Whitelist")
             print("11. Edit Device in Whitelist")
             print("12. Remove Device from Whitelist")
-            print("13. Generate Report")
-            print("14. Manual Update Instructions")
-            print("15. Exit")
+            print("13. Advanced Settings Configuration")
+            print("14. Generate Report")
+            print("15. Manual Update Instructions")
+            print("16. Exit")
             
             choice = input("\nSelect option (or 'back' to return): ").strip()
             
@@ -811,16 +899,268 @@ class RogueDetectionSystem:
                 self.remove_device_from_whitelist()
                 
             elif choice == '13':
-                self.generate_report_interactive()
+                self.advanced_settings_menu()
                 
             elif choice == '14':
-                self.show_manual_update_info()
+                self.generate_report_interactive()
                 
             elif choice == '15':
+                self.show_manual_update_info()
+                
+            elif choice == '16':
                 print("\n👋 Exiting...")
                 break
             else:
                 print("❌ Invalid option. Please try again.")
+    
+    def advanced_settings_menu(self):
+        """Advanced settings configuration menu"""
+        while True:
+            print("\n" + "="*60)
+            print("ADVANCED SETTINGS CONFIGURATION")
+            print("="*60)
+            print("1. Network Discovery Settings")
+            print("2. Rogue Detection Settings")
+            print("3. IoT Profiling Settings")
+            print("4. DHCP Security Settings")
+            print("5. Traffic Analysis Settings")
+            print("6. SSL Monitoring Settings")
+            print("7. Advanced Attack Detection Settings")
+            print("8. General Settings")
+            print("9. View Current Settings")
+            print("10. Reset to Defaults")
+            print("11. Export Settings")
+            print("12. Import Settings")
+            print("13. Back to Main Menu")
+            
+            choice = input("\nSelect option: ").strip()
+            
+            if choice == '1':
+                self.configure_network_discovery_settings()
+            elif choice == '2':
+                self.configure_rogue_detection_settings()
+            elif choice == '3':
+                self.configure_iot_profiling_settings()
+            elif choice == '4':
+                self.configure_dhcp_security_settings()
+            elif choice == '5':
+                self.configure_traffic_analysis_settings()
+            elif choice == '6':
+                self.configure_ssl_monitoring_settings()
+            elif choice == '7':
+                self.configure_advanced_attack_detection_settings()
+            elif choice == '8':
+                self.configure_general_settings()
+            elif choice == '9':
+                self.view_current_settings()
+            elif choice == '10':
+                self.reset_settings_to_defaults()
+            elif choice == '11':
+                self.export_settings()
+            elif choice == '12':
+                self.import_settings()
+            elif choice == '13':
+                break
+            else:
+                print("❌ Invalid option. Please try again.")
+    
+    def configure_network_discovery_settings(self):
+        """Configure network discovery settings"""
+        print("\n" + "="*50)
+        print("NETWORK DISCOVERY SETTINGS")
+        print("="*50)
+        
+        settings = self.settings_manager.get_category_settings("network_discovery")
+        
+        print(f"Current Settings:")
+        print(f"1. Scan Timeout: {settings['scan_timeout']} seconds")
+        print(f"2. Max Threads: {settings['max_threads']}")
+        print(f"3. Ping Timeout: {settings['ping_timeout']} seconds")
+        print(f"4. ARP Timeout: {settings['arp_timeout']} seconds")
+        print(f"5. Retry Count: {settings['retry_count']}")
+        print(f"6. Scan Delay: {settings['scan_delay']} seconds")
+        
+        choice = input("\nSelect setting to modify (1-6), or 'back': ").strip()
+        
+        if choice == 'back':
+            return
+        
+        try:
+            if choice == '1':
+                value = int(input(f"Enter scan timeout (current: {settings['scan_timeout']}): "))
+                self.settings_manager.set_setting("network_discovery", "scan_timeout", value)
+            elif choice == '2':
+                value = int(input(f"Enter max threads (current: {settings['max_threads']}): "))
+                self.settings_manager.set_setting("network_discovery", "max_threads", value)
+            elif choice == '3':
+                value = int(input(f"Enter ping timeout (current: {settings['ping_timeout']}): "))
+                self.settings_manager.set_setting("network_discovery", "ping_timeout", value)
+            elif choice == '4':
+                value = int(input(f"Enter ARP timeout (current: {settings['arp_timeout']}): "))
+                self.settings_manager.set_setting("network_discovery", "arp_timeout", value)
+            elif choice == '5':
+                value = int(input(f"Enter retry count (current: {settings['retry_count']}): "))
+                self.settings_manager.set_setting("network_discovery", "retry_count", value)
+            elif choice == '6':
+                value = float(input(f"Enter scan delay (current: {settings['scan_delay']}): "))
+                self.settings_manager.set_setting("network_discovery", "scan_delay", value)
+            
+            print("✅ Setting updated successfully!")
+        except ValueError:
+            print("❌ Invalid value. Please enter a valid number.")
+    
+    def configure_ssl_monitoring_settings(self):
+        """Configure SSL monitoring settings"""
+        print("\n" + "="*50)
+        print("SSL MONITORING SETTINGS")
+        print("="*50)
+        
+        settings = self.settings_manager.get_category_settings("ssl_monitoring")
+        
+        print(f"Current Settings:")
+        print(f"1. Monitor Duration: {settings['monitor_duration']} seconds")
+        print(f"2. Connection Timeout: {settings['connection_timeout']} seconds")
+        print(f"3. Max Hosts: {settings['max_hosts']}")
+        print(f"4. Expiry Threshold: {settings['expiry_threshold']} days")
+        print(f"5. Key Size Threshold: {settings['key_size_threshold']} bits")
+        print(f"6. Check Revocation: {settings['check_revocation']}")
+        print(f"7. Strict Validation: {settings['strict_validation']}")
+        
+        choice = input("\nSelect setting to modify (1-7), or 'back': ").strip()
+        
+        if choice == 'back':
+            return
+        
+        try:
+            if choice == '1':
+                value = int(input(f"Enter monitor duration (current: {settings['monitor_duration']}): "))
+                self.settings_manager.set_setting("ssl_monitoring", "monitor_duration", value)
+            elif choice == '2':
+                value = int(input(f"Enter connection timeout (current: {settings['connection_timeout']}): "))
+                self.settings_manager.set_setting("ssl_monitoring", "connection_timeout", value)
+            elif choice == '3':
+                value = int(input(f"Enter max hosts (current: {settings['max_hosts']}): "))
+                self.settings_manager.set_setting("ssl_monitoring", "max_hosts", value)
+            elif choice == '4':
+                value = int(input(f"Enter expiry threshold (current: {settings['expiry_threshold']}): "))
+                self.settings_manager.set_setting("ssl_monitoring", "expiry_threshold", value)
+            elif choice == '5':
+                value = int(input(f"Enter key size threshold (current: {settings['key_size_threshold']}): "))
+                self.settings_manager.set_setting("ssl_monitoring", "key_size_threshold", value)
+            elif choice == '6':
+                value = input(f"Check revocation (current: {settings['check_revocation']}) [y/n]: ").lower() == 'y'
+                self.settings_manager.set_setting("ssl_monitoring", "check_revocation", value)
+            elif choice == '7':
+                value = input(f"Strict validation (current: {settings['strict_validation']}) [y/n]: ").lower() == 'y'
+                self.settings_manager.set_setting("ssl_monitoring", "strict_validation", value)
+            
+            print("✅ Setting updated successfully!")
+        except ValueError:
+            print("❌ Invalid value. Please enter a valid number.")
+    
+    def configure_advanced_attack_detection_settings(self):
+        """Configure advanced attack detection settings"""
+        print("\n" + "="*50)
+        print("ADVANCED ATTACK DETECTION SETTINGS")
+        print("="*50)
+        
+        settings = self.settings_manager.get_category_settings("advanced_attack_detection")
+        
+        print(f"Current Settings:")
+        print(f"1. Monitor Duration: {settings['monitor_duration']} seconds")
+        print(f"2. MAC Flood Threshold: {settings['mac_flood_threshold']} packets/sec")
+        print(f"3. SYN Flood Threshold: {settings['syn_flood_threshold']} packets/sec")
+        print(f"4. UDP Flood Threshold: {settings['udp_flood_threshold']} packets/sec")
+        print(f"5. ICMP Flood Threshold: {settings['icmp_flood_threshold']} packets/sec")
+        print(f"6. Port Scan Threshold: {settings['port_scan_threshold']} ports")
+        print(f"7. Enable Layer 2 Detection: {settings['enable_layer2_detection']}")
+        print(f"8. Enable Layer 3 Detection: {settings['enable_layer3_detection']}")
+        print(f"9. Enable Layer 4 Detection: {settings['enable_layer4_detection']}")
+        print(f"10. Enable MITM Detection: {settings['enable_mitm_detection']}")
+        
+        choice = input("\nSelect setting to modify (1-10), or 'back': ").strip()
+        
+        if choice == 'back':
+            return
+        
+        try:
+            if choice == '1':
+                value = int(input(f"Enter monitor duration (current: {settings['monitor_duration']}): "))
+                self.settings_manager.set_setting("advanced_attack_detection", "monitor_duration", value)
+            elif choice == '2':
+                value = int(input(f"Enter MAC flood threshold (current: {settings['mac_flood_threshold']}): "))
+                self.settings_manager.set_setting("advanced_attack_detection", "mac_flood_threshold", value)
+            elif choice == '3':
+                value = int(input(f"Enter SYN flood threshold (current: {settings['syn_flood_threshold']}): "))
+                self.settings_manager.set_setting("advanced_attack_detection", "syn_flood_threshold", value)
+            elif choice == '4':
+                value = int(input(f"Enter UDP flood threshold (current: {settings['udp_flood_threshold']}): "))
+                self.settings_manager.set_setting("advanced_attack_detection", "udp_flood_threshold", value)
+            elif choice == '5':
+                value = int(input(f"Enter ICMP flood threshold (current: {settings['icmp_flood_threshold']}): "))
+                self.settings_manager.set_setting("advanced_attack_detection", "icmp_flood_threshold", value)
+            elif choice == '6':
+                value = int(input(f"Enter port scan threshold (current: {settings['port_scan_threshold']}): "))
+                self.settings_manager.set_setting("advanced_attack_detection", "port_scan_threshold", value)
+            elif choice == '7':
+                value = input(f"Enable Layer 2 detection (current: {settings['enable_layer2_detection']}) [y/n]: ").lower() == 'y'
+                self.settings_manager.set_setting("advanced_attack_detection", "enable_layer2_detection", value)
+            elif choice == '8':
+                value = input(f"Enable Layer 3 detection (current: {settings['enable_layer3_detection']}) [y/n]: ").lower() == 'y'
+                self.settings_manager.set_setting("advanced_attack_detection", "enable_layer3_detection", value)
+            elif choice == '9':
+                value = input(f"Enable Layer 4 detection (current: {settings['enable_layer4_detection']}) [y/n]: ").lower() == 'y'
+                self.settings_manager.set_setting("advanced_attack_detection", "enable_layer4_detection", value)
+            elif choice == '10':
+                value = input(f"Enable MITM detection (current: {settings['enable_mitm_detection']}) [y/n]: ").lower() == 'y'
+                self.settings_manager.set_setting("advanced_attack_detection", "enable_mitm_detection", value)
+            
+            print("✅ Setting updated successfully!")
+        except ValueError:
+            print("❌ Invalid value. Please enter a valid number.")
+    
+    def view_current_settings(self):
+        """View current all settings"""
+        print("\n" + "="*60)
+        print("CURRENT SETTINGS")
+        print("="*60)
+        
+        for category, settings in self.settings_manager.settings.items():
+            print(f"\n{category.upper()}:")
+            for key, value in settings.items():
+                print(f"  {key}: {value}")
+    
+    def reset_settings_to_defaults(self):
+        """Reset settings to defaults"""
+        confirm = input("\n⚠️  This will reset all settings to defaults. Continue? (y/N): ").strip().lower()
+        if confirm == 'y':
+            self.settings_manager.reset_to_defaults()
+            print("✅ Settings reset to defaults!")
+        else:
+            print("❌ Reset cancelled.")
+    
+    def export_settings(self):
+        """Export settings to file"""
+        filename = input("Enter export filename (default: rdds_settings_export.json): ").strip()
+        if not filename:
+            filename = "rdds_settings_export.json"
+        
+        if self.settings_manager.export_settings(filename):
+            print(f"✅ Settings exported to {filename}")
+        else:
+            print("❌ Failed to export settings.")
+    
+    def import_settings(self):
+        """Import settings from file"""
+        filename = input("Enter import filename: ").strip()
+        if not filename:
+            print("❌ Please provide a filename.")
+            return
+        
+        if self.settings_manager.import_settings(filename):
+            print(f"✅ Settings imported from {filename}")
+        else:
+            print("❌ Failed to import settings.")
 
 # ============================================
 # MAIN ENTRY POINT
