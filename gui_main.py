@@ -8,6 +8,24 @@ import queue
 import json
 from datetime import datetime
 import ctypes
+import traceback
+import sys
+
+# ============================================
+# IMPORT ERROR HANDLER
+# ============================================
+try:
+    from error_handler import handle_rdds_error, error_handler
+    print("✅ Error handler imported")
+except ImportError as e:
+    print(f"❌ Error handler import failed: {e}")
+    # Fallback basic error handling
+    def handle_rdds_error(error, context="", severity="ERROR", show_user=True, critical=False):
+        print(f"❌ {severity} in {context}: {error}")
+        if show_user:
+            messagebox.showerror(f"RDDS {severity}", f"{context}: {error}")
+        return {'error_message': str(error)}
+
 from network_discovery import NetworkScanner
 from rogue_detector import RogueDetector
 from attack_detector import AttackDetector
@@ -189,16 +207,16 @@ class ModernRDDS_GUI:
         )
         self.status_indicator.pack(side='right', padx=20, pady=20)
         
-        # Update button
+        # Manual Update button (replaces automatic update)
         update_button = tk.Button(
             header_frame,
-            text="🔄",
+            text="📦",
             font=('Segoe UI', 16),
             bg=self.colors['primary'],
             fg='white',
             bd=0,
             relief='flat',
-            command=self.check_for_updates,
+            command=self.show_manual_update_instructions,
             cursor='hand2'
         )
         update_button.pack(side='right', padx=(0, 10), pady=20)
@@ -1533,83 +1551,673 @@ class ModernRDDS_GUI:
         self.add_activity(f"🚨 Attack detected: {alert['type']}")
         
     def generate_report(self):
-        """Generate security report"""
+        """Generate comprehensive security report"""
         try:
-            # Get current scan results if available
-            devices = []
-            alerts = []
+            handle_rdds_error(None, "Starting Report Generation", "INFO", True, False)
             
-            # Try to get devices from scan tree
-            for child in self.scan_tree.get_children():
-                values = self.scan_tree.item(child)['values']
-                if len(values) >= 4:
-                    device = {
-                        'ip': values[0],
-                        'mac': values[1],
-                        'vendor': values[2],
-                        'status': values[3],
-                        'risk_score': int(values[4].split('/')[0])
-                    }
-                    devices.append(device)
+            # Collect all available data
+            report_data = {
+                'devices': [],
+                'alerts': [],
+                'iot_profiles': [],
+                'dhcp_summary': {},
+                'traffic_analysis': {},
+                'ssl_monitoring': {},
+                'attack_detection': {},
+                'timestamp': datetime.now().isoformat(),
+                'scan_duration': 0
+            }
             
-            # If no scan data, try to get from last scan
-            if not devices:
-                devices = getattr(self, '_last_devices', [])
-                alerts = getattr(self, '_last_alerts', [])
+            # Get devices from scan tree
+            try:
+                for child in self.scan_tree.get_children():
+                    values = self.scan_tree.item(child)['values']
+                    if len(values) >= 4:
+                        device = {
+                            'ip': values[0],
+                            'mac': values[1],
+                            'vendor': values[2] if len(values) > 2 else 'Unknown',
+                            'status': values[3] if len(values) > 3 else 'Unknown',
+                            'risk_score': 0
+                        }
+                        # Extract risk score if available
+                        if len(values) > 4 and isinstance(values[4], str) and '/' in values[4]:
+                            try:
+                                device['risk_score'] = int(values[4].split('/')[0])
+                            except:
+                                pass
+                        report_data['devices'].append(device)
+            except Exception as e:
+                handle_rdds_error(e, "Extract Device Data", "WARNING", True, False)
             
-            # Include monitoring alerts
+            # Get last scan data if available
+            if not report_data['devices']:
+                report_data['devices'] = getattr(self, '_last_devices', [])
+                report_data['alerts'] = getattr(self, '_last_alerts', [])
+            
+            # Get monitoring alerts
             if hasattr(self, '_monitoring_alerts') and self._monitoring_alerts:
-                alerts.extend(self._monitoring_alerts)
-                self.add_activity(f"📊 Including {len(self._monitoring_alerts)} monitoring alerts in report")
-                
+                report_data['alerts'].extend(self._monitoring_alerts)
+            
+            # Get IoT profiling data
+            if hasattr(self, 'iot_profiler') and self.iot_profiler:
+                try:
+                    # Get IoT profiles from recent scans
+                    if hasattr(self, '_last_iot_profiles'):
+                        report_data['iot_profiles'] = self._last_iot_profiles
+                except Exception as e:
+                    handle_rdds_error(e, "Collect IoT Data", "WARNING", True, False)
+            
+            # Get DHCP security data
+            if hasattr(self, 'dhcp_monitor') and self.dhcp_monitor:
+                try:
+                    if hasattr(self, '_last_dhcp_summary'):
+                        report_data['dhcp_summary'] = self._last_dhcp_summary
+                except Exception as e:
+                    handle_rdds_error(e, "Collect DHCP Data", "WARNING", True, False)
+            
+            # Get traffic analysis data
+            if hasattr(self, 'traffic_analyzer') and self.traffic_analyzer:
+                try:
+                    if hasattr(self, '_last_traffic_report'):
+                        report_data['traffic_analysis'] = self._last_traffic_report
+                except Exception as e:
+                    handle_rdds_error(e, "Collect Traffic Data", "WARNING", True, False)
+            
+            # Get SSL monitoring data
+            if hasattr(self, 'ssl_monitor') and self.ssl_monitor:
+                try:
+                    if hasattr(self, '_last_ssl_report'):
+                        report_data['ssl_monitoring'] = self._last_ssl_report
+                except Exception as e:
+                    handle_rdds_error(e, "Collect SSL Data", "WARNING", True, False)
+            
+            # Get advanced attack detection data
+            if hasattr(self, 'advanced_detector') and self.advanced_detector:
+                try:
+                    if hasattr(self, '_last_attack_report'):
+                        report_data['attack_detection'] = self._last_attack_report
+                except Exception as e:
+                    handle_rdds_error(e, "Collect Attack Data", "WARNING", True, False)
+            
             # If still no data, run a quick scan
-            if not devices and not alerts:
+            if not report_data['devices'] and not report_data['alerts']:
                 self.add_activity("📊 No scan data available. Running quick scan for report...")
                 try:
-                    # Run a minimal scan
+                    start_time = time.time()
                     network_range = self.scanner.get_network_range()
                     scanned_devices = self.scanner.arp_scan(network_range)
                     devices, scan_alerts = self.detector.analyze_network(scanned_devices)
-                    alerts.extend(scan_alerts)
+                    report_data['devices'] = devices
+                    report_data['alerts'].extend(scan_alerts)
+                    report_data['scan_duration'] = time.time() - start_time
                     self._last_devices = devices
-                    self._last_alerts = alerts
+                    self._last_alerts = report_data['alerts']
                     self.add_activity(f"✅ Quick scan found {len(devices)} devices")
                 except Exception as scan_error:
-                    self.add_activity(f"⚠️ Quick scan failed: {scan_error}")
-                    # Create sample data for demonstration
-                    devices = [
+                    handle_rdds_error(scan_error, "Quick Scan for Report", "WARNING", True, False)
+                    # Create minimal demo data
+                    report_data['devices'] = [
                         {
                             'ip': '192.168.1.1',
                             'mac': '00:11:22:33:44:55',
-                            'vendor': 'Demo Vendor',
+                            'vendor': 'Demo Router',
                             'status': 'TRUSTED',
                             'risk_score': 10
                         }
                     ]
-                    alerts = []
+                    report_data['alerts'] = []
                     self.add_activity("📝 Using demo data for report")
-                    
-            # Generate report
-            self.add_activity("📊 Generating security report...")
-            report_file = self.logger.generate_report(devices, alerts)
+            
+            # Generate comprehensive report
+            self.add_activity("📊 Generating comprehensive security report...")
+            report_file = self._generate_comprehensive_report(report_data)
             
             # Display report content
-            with open(report_file, 'r') as f:
-                report_content = f.read()
+            try:
+                with open(report_file, 'r', encoding='utf-8') as f:
+                    report_content = f.read()
+                    
+                self.report_text.config(state='normal')
+                self.report_text.delete('1.0', 'end')
+                self.report_text.insert('1.0', report_content)
+                self.report_text.config(state='disabled')
                 
-            self.report_text.config(state='normal')
-            self.report_text.delete('1.0', 'end')
-            self.report_text.insert('1.0', report_content)
-            self.report_text.config(state='disabled')
+            except Exception as e:
+                handle_rdds_error(e, "Display Report Content", "ERROR", True, False)
             
-            self.add_activity(f"📊 Report generated: {report_file}")
-            self.add_activity(f"📊 Report includes {len(devices)} devices and {len(alerts)} alerts")
-            messagebox.showinfo("Report Generated", f"Security report saved to:\n{report_file}\n\nReport includes {len(devices)} devices and {len(alerts)} alerts")
+            # Summary statistics
+            total_devices = len(report_data['devices'])
+            total_alerts = len(report_data['alerts'])
+            iot_devices = len(report_data['iot_profiles'])
+            dhcp_alerts = len(report_data['dhcp_summary'].get('alerts', []))
+            ssl_alerts = len(report_data['ssl_monitoring'].get('certificate_alerts', []))
+            attack_count = report_data['attack_detection'].get('total_attacks', 0)
+            
+            summary_msg = f"Security report saved to:\n{report_file}\n\n"
+            summary_msg += f"📊 Report Summary:\n"
+            summary_msg += f"• Total Devices: {total_devices}\n"
+            summary_msg += f"• Security Alerts: {total_alerts}\n"
+            summary_msg += f"• IoT Devices: {iot_devices}\n"
+            summary_msg += f"• DHCP Alerts: {dhcp_alerts}\n"
+            summary_msg += f"• SSL Alerts: {ssl_alerts}\n"
+            summary_msg += f"• Attack Detections: {attack_count}\n"
+            summary_msg += f"• Scan Duration: {report_data['scan_duration']:.2f}s"
+            
+            self.add_activity(f"📊 Comprehensive report generated: {report_file}")
+            self.add_activity(f"📊 Report includes {total_devices} devices, {total_alerts} alerts, and all security feature data")
+            messagebox.showinfo("Comprehensive Report Generated", summary_msg)
             
         except Exception as e:
-            error_msg = f"Failed to generate report: {str(e)}"
-            self.add_activity(f"❌ {error_msg}")
-            messagebox.showerror("Report Error", error_msg)
+            error_msg = f"Failed to generate comprehensive report: {str(e)}"
+            handle_rdds_error(e, "Report Generation", "ERROR", True, True)
+    
+    def _generate_comprehensive_report(self, report_data):
+        """Generate comprehensive security report with all features in HTML format"""
+        try:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            report_file = f"logs/rdds_comprehensive_report_{timestamp}.html"
+            
+            # Ensure logs directory exists
+            import os
+            os.makedirs("logs", exist_ok=True)
+            
+            with open(report_file, 'w', encoding='utf-8') as f:
+                f.write("""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛡️ RDDS - Comprehensive Security Report</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header .subtitle {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .section {
+            margin-bottom: 40px;
+            padding: 25px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            border-left: 5px solid #3498db;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        
+        .section h2 {
+            color: #2c3e50;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section h3 {
+            color: #34495e;
+            font-size: 1.3em;
+            margin: 20px 0 15px 0;
+            border-bottom: 2px solid #e1e8ed;
+            padding-bottom: 10px;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border-left: 4px solid #3498db;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+        }
+        
+        .card h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-item {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        .alert {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-left: 5px solid #f39c12;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        
+        .alert.high {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            border-left-color: #e74c3c;
+        }
+        
+        .alert.medium {
+            background: #fff3cd;
+            border-color: #ffeaa7;
+            border-left-color: #f39c12;
+        }
+        
+        .alert.low {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            border-left-color: #27ae60;
+        }
+        
+        .device-list {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .device-item {
+            padding: 20px;
+            border-bottom: 1px solid #e1e8ed;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 15px;
+            align-items: center;
+            transition: background 0.3s ease;
+        }
+        
+        .device-item:hover {
+            background: #f8f9fa;
+        }
+        
+        .device-item:last-child {
+            border-bottom: none;
+        }
+        
+        .risk-high {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        .risk-medium {
+            color: #f39c12;
+            font-weight: bold;
+        }
+        
+        .risk-low {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        
+        .recommendations {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 30px;
+        }
+        
+        .recommendations h3 {
+            margin-bottom: 20px;
+            font-size: 1.4em;
+        }
+        
+        .recommendations ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .recommendations li {
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            position: relative;
+            padding-left: 30px;
+        }
+        
+        .recommendations li:before {
+            content: "💡";
+            position: absolute;
+            left: 0;
+            top: 12px;
+        }
+        
+        .recommendations li:last-child {
+            border-bottom: none;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 30px;
+            background: #2c3e50;
+            color: white;
+            margin-top: 40px;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .badge.high {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .badge.medium {
+            background: #f39c12;
+            color: white;
+        }
+        
+        .badge.low {
+            background: #27ae60;
+            color: white;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .device-item {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .stat-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .print-header {
+            display: none;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .container {
+                box-shadow: none;
+                border-radius: 0;
+            }
+            
+            .print-header {
+                display: block;
+                text-align: center;
+                margin-bottom: 20px;
+            }
+            
+            .header {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ Rogue Detection & Defense System</h1>
+            <div class="subtitle">Comprehensive Security Report</div>
+            <div class="print-header">
+                <h2>Security Report</h2>
+                <p>Generated: """ + report_data['timestamp'] + """</p>
+            </div>
+        </div>
+        
+        <div class="content">
+""")
+                
+                # Executive Summary
+                f.write("""
+            <div class="section">
+                <h2>📋 Executive Summary</h2>
+                <div class="stat-grid">
+""")
+                
+                total_devices = len(report_data['devices'])
+                total_alerts = len(report_data['alerts'])
+                high_risk_devices = len([d for d in report_data['devices'] if d.get('risk_score', 0) >= 70])
+                
+                f.write(f"""
+                    <div class="stat-item">
+                        <div class="stat-number">{total_devices}</div>
+                        <div class="stat-label">Total Devices</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">{total_alerts}</div>
+                        <div class="stat-label">Security Alerts</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">{high_risk_devices}</div>
+                        <div class="stat-label">High Risk Devices</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">{'HIGH' if high_risk_devices > 0 else 'MEDIUM' if total_alerts > 0 else 'LOW'}</div>
+                        <div class="stat-label">Network Risk Level</div>
+                    </div>
+""")
+                
+                f.write("""
+                </div>
+            </div>
+""")
+                
+                # Device Analysis
+                if report_data['devices']:
+                    f.write("""
+            <div class="section">
+                <h2>🔍 Device Analysis</h2>
+                <div class="device-list">
+""")
+                    
+                    for device in report_data['devices']:
+                        risk_score = device.get('risk_score', 0)
+                        risk_class = 'risk-high' if risk_score >= 70 else 'risk-medium' if risk_score >= 40 else 'risk-low'
+                        risk_label = 'HIGH' if risk_score >= 70 else 'MEDIUM' if risk_score >= 40 else 'LOW'
+                        
+                        f.write(f"""
+                    <div class="device-item">
+                        <div>
+                            <strong>{device['ip']}</strong><br>
+                            <small>{device.get('vendor', 'Unknown')}</small>
+                        </div>
+                        <div>{device['mac']}</div>
+                        <div>{device.get('status', 'Unknown')}</div>
+                        <div class="{risk_class}">{risk_score}% <span class="badge {risk_class.lower()}">{risk_label}</span></div>
+                    </div>
+""")
+                    
+                    f.write("""
+                </div>
+            </div>
+""")
+                
+                # Security Alerts
+                if report_data['alerts']:
+                    f.write("""
+            <div class="section">
+                <h2>🚨 Security Alerts</h2>
+""")
+                    
+                    for alert in report_data['alerts']:
+                        alert_class = alert.get('severity', 'MEDIUM').lower()
+                        f.write(f"""
+                <div class="alert {alert_class}">
+                    <strong>{alert.get('type', 'Unknown')}</strong><br>
+                    <small>Severity: {alert.get('severity', 'Unknown')} | Source: {alert.get('source', 'Unknown')}</small><br>
+                    {alert.get('message', 'No message')}
+                </div>
+""")
+                    
+                    f.write("""
+            </div>
+""")
+                
+                # IoT Device Profiling
+                if report_data['iot_profiles']:
+                    f.write("""
+            <div class="section">
+                <h2>📱 IoT Device Profiling</h2>
+                <div class="grid">
+""")
+                    
+                    for profile in report_data['iot_profiles']:
+                        risk_score = profile.get('risk_score', 0)
+                        risk_class = 'risk-high' if risk_score >= 70 else 'risk-medium' if risk_score >= 40 else 'risk-low'
+                        
+                        f.write(f"""
+                    <div class="card">
+                        <h4>{profile.get('device_type', 'Unknown Device')}</h4>
+                        <p><strong>IP:</strong> {profile.get('ip', 'Unknown')}</p>
+                        <p><strong>MAC:</strong> {profile.get('mac', 'Unknown')}</p>
+                        <p><strong>Manufacturer:</strong> {profile.get('manufacturer', 'Unknown')}</p>
+                        <p><strong>Risk Score:</strong> <span class="{risk_class}">{risk_score}%</span></p>
+                        <p><strong>Vulnerabilities:</strong> {len(profile.get('vulnerabilities', []))}</p>
+                    </div>
+""")
+                    
+                    f.write("""
+                </div>
+            </div>
+""")
+                
+                # Recommendations
+                f.write("""
+            <div class="recommendations">
+                <h3>💡 Security Recommendations</h3>
+                <ul>
+""")
+                
+                recommendations = []
+                
+                if high_risk_devices > 0:
+                    recommendations.append("Investigate and mitigate high-risk devices immediately")
+                if total_alerts > 10:
+                    recommendations.append("Review and address multiple security alerts")
+                if len(report_data['iot_profiles']) > 0:
+                    recommendations.append("Review IoT device security configurations")
+                if report_data['ssl_monitoring'].get('high_risk_certificates', 0) > 0:
+                    recommendations.append("Update or replace high-risk SSL certificates")
+                if report_data['attack_detection'].get('total_attacks', 0) > 0:
+                    recommendations.append("Implement network security measures to prevent attacks")
+                
+                if recommendations:
+                    for rec in recommendations:
+                        f.write(f"<li>{rec}</li>")
+                else:
+                    f.write("<li>Network security posture appears satisfactory</li>")
+                    f.write("<li>Continue regular monitoring and scanning</li>")
+                
+                f.write("""
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>📊 Report Generated: """ + report_data['timestamp'] + """</p>
+            <p>🔧 RDDS Version: 2.0.0 Enhanced</p>
+            <p>⏱️ Scan Duration: """ + f"{report_data['scan_duration']:.2f}" + """ seconds</p>
+        </div>
+    </div>
+</body>
+</html>""")
+            
+            return report_file
+            
+        except Exception as e:
+            handle_rdds_error(e, "Generate HTML Report File", "ERROR", True, False)
+            # Fallback to basic report
+            return self.logger.generate_report(report_data['devices'], report_data['alerts'])
             
     def open_settings(self):
         """Open advanced settings dialog"""
@@ -1876,487 +2484,187 @@ class ModernRDDS_GUI:
                 if isinstance(widget, tk.Toplevel) and widget.title() == "⚙️ Advanced Settings":
                     widget.destroy()
     
-    def check_for_updates(self):
-        """Check for software updates with improved error handling"""
+    def show_manual_update_instructions(self):
+        """Show manual update instructions dialog"""
         try:
-            import requests
-            import subprocess
-            import sys
+            instructions_window = tk.Toplevel(self.root)
+            instructions_window.title("📦 Manual Update Instructions")
+            instructions_window.geometry("700x600")
+            instructions_window.transient(self.root)
+            instructions_window.grab_set()
             
-            # Show checking dialog
-            self.update_status("Checking for updates...")
-            self.add_activity("🔄 Checking for software updates...")
-            
-            # Get current version (you can store this in a config file)
-            current_version = "1.0.0"  # This should be read from a version file
-            
-            # Test internet connectivity first
-            try:
-                # Test with a simple request
-                test_response = requests.get("https://www.google.com", timeout=5)
-                if test_response.status_code != 200:
-                    raise Exception("Internet connectivity test failed")
-                print("[*] Internet connectivity confirmed")
-            except Exception as e:
-                print(f"[!] Internet connectivity test failed: {e}")
-                messagebox.showerror(
-                    "Connection Error", 
-                    "Unable to connect to the internet.\n\n"
-                    "Please check your internet connection and try again.\n\n"
-                    "If you're behind a proxy or firewall, you may need to:\n"
-                    "1. Configure your proxy settings\n"
-                    "2. Allow this application through your firewall\n"
-                    "3. Check if GitHub.com is accessible"
-                )
-                self.update_status("Ready")
-                return
-            
-            # Check GitHub repository for latest version
-            repo_url = "https://api.github.com/repos/StrykarBoston/RDDS/releases/latest"
-            
-            try:
-                print(f"[*] Checking GitHub API: {repo_url}")
-                response = requests.get(repo_url, timeout=15)
-                print(f"[*] GitHub API response status: {response.status_code}")
-                
-                if response.status_code == 200:
-                    release_data = response.json()
-                    latest_version = release_data['tag_name'].lstrip('v')
-                    download_url = release_data.get('zipball_url')
-                    
-                    print(f"[*] Current version: {current_version}")
-                    print(f"[*] Latest version: {latest_version}")
-                    
-                    if latest_version > current_version:
-                        # Update available
-                        result = messagebox.askyesno(
-                            "Update Available",
-                            f"A new version ({latest_version}) is available!\n\n"
-                            f"Current version: {current_version}\n"
-                            f"Latest version: {latest_version}\n\n"
-                            f"Release notes:\n{release_data.get('body', 'No release notes available.')}\n\n"
-                            f"Would you like to download the update?"
-                        )
-                        
-                        if result and download_url:
-                            self.download_update(download_url, latest_version)
-                    else:
-                        messagebox.showinfo("Up to Date", f"You are running the latest version ({current_version})")
-                        self.add_activity("✅ Software is up to date")
-                elif response.status_code == 403:
-                    messagebox.showerror(
-                        "API Limit Reached", 
-                        "GitHub API rate limit exceeded.\n\n"
-                        "Please try again later or visit:\n"
-                        "https://github.com/StrykarBoston/RDDS/releases"
-                    )
-                elif response.status_code == 404:
-                    messagebox.showerror(
-                        "Repository Not Found", 
-                        "The RDDS repository was not found on GitHub.\n\n"
-                        "Please check the repository name or visit:\n"
-                        "https://github.com/StrykarBoston/RDDS"
-                    )
-                else:
-                    messagebox.showerror(
-                        "Update Check Failed", 
-                        f"GitHub API returned status {response.status_code}.\n\n"
-                        "Please check your internet connection and try again.\n\n"
-                        "You can also check for updates manually at:\n"
-                        "https://github.com/StrykarBoston/RDDS/releases"
-                    )
-                    
-            except requests.exceptions.Timeout:
-                messagebox.showerror(
-                    "Timeout Error", 
-                    "Request to GitHub API timed out.\n\n"
-                    "Please check your internet connection and try again."
-                )
-            except requests.exceptions.ConnectionError as e:
-                messagebox.showerror(
-                    "Connection Error", 
-                    f"Failed to connect to GitHub API.\n\n"
-                    f"Error: {str(e)}\n\n"
-                    "Please check your internet connection, proxy settings, or firewall."
-                )
-            except requests.RequestException as e:
-                messagebox.showerror("Network Error", f"Failed to check for updates: {str(e)}")
-                
-        except ImportError:
-            # Fallback method without requests library
-            messagebox.showinfo(
-                "Update Check",
-                "Automatic update checking requires the 'requests' library.\n\n"
-                "To install: pip install requests\n\n"
-                "Alternatively, visit:\n"
-                "https://github.com/StrykarBoston/RDDS/releases\n"
-                "to check for updates manually."
+            # Create scrolled text widget
+            text_widget = scrolledtext.ScrolledText(
+                instructions_window,
+                wrap=tk.WORD,
+                width=80,
+                height=35,
+                font=('Consolas', 10)
             )
+            text_widget.pack(fill='both', expand=True, padx=10, pady=10)
             
-        self.update_status("Ready")
-        
-    def download_update(self, download_url, version):
-        """Download and install update"""
-        try:
-            import requests
-            import zipfile
-            import os
+            # Manual update instructions
+            instructions = """
+📦 RDDS MANUAL UPDATE INSTRUCTIONS
+===================================
+
+🔧 METHOD 1: GIT PULL (RECOMMENDED)
+-----------------------------------
+If you cloned the repository using Git:
+
+1. Open Command Prompt/PowerShell as Administrator
+2. Navigate to RDDS directory:
+   cd F:\\Hackthone\\RDDS
+
+3. Stash local changes (if any):
+   git stash
+
+4. Pull latest updates:
+   git pull origin main
+
+5. Restore local changes (if any):
+   git stash pop
+
+6. Install/update dependencies:
+   pip install -r requirements.txt
+
+7. Restart the application
+
+🔧 METHOD 2: MANUAL DOWNLOAD
+------------------------------
+If you downloaded the ZIP file:
+
+1. Backup your current settings:
+   - Copy settings.json to a safe location
+   - Copy whitelist.json to a safe location
+
+2. Visit the GitHub repository:
+   https://github.com/StrykarBoston/RDDS
+
+3. Download the latest release:
+   - Click "Code" → "Download ZIP"
+   - Or visit: https://github.com/StrykarBoston/RDDS/releases
+
+4. Extract the new version:
+   - Extract to a temporary folder
+   - Copy your backed-up settings files back
+
+5. Install/update dependencies:
+   pip install -r requirements.txt
+
+6. Restart the application
+
+🔧 METHOD 3: REINSTALL (CLEAN INSTALL)
+--------------------------------------
+For a completely fresh installation:
+
+1. Backup important files:
+   - settings.json
+   - whitelist.json
+   - Any custom reports
+
+2. Uninstall current version (optional):
+   - Delete the RDDS folder
+
+3. Download latest version from GitHub
+
+4. Follow installation instructions from:
+   - GUI_Windows_Documentation.md
+   - CLI_Linux_Documentation.md
+
+5. Restore your backed-up files
+
+📋 VERSION INFORMATION
+----------------------
+Current Version: 2.0.0 Enhanced
+Release Date: January 2026
+
+🔍 CHECKING FOR UPDATES
+-----------------------
+To check if updates are available:
+
+1. Visit GitHub Releases:
+   https://github.com/StrykarBoston/RDDS/releases
+
+2. Compare your current version with latest release
+
+3. Read release notes for new features and fixes
+
+⚠️ IMPORTANT NOTES
+------------------
+• Always backup your settings before updating
+• Ensure you have Administrator privileges
+• Update Python dependencies after updating
+• Check system requirements for new versions
+• Some updates may require configuration changes
+
+🐛 TROUBLESHOOTING
+------------------
+If you encounter issues during update:
+
+1. Clear Python cache:
+   pip cache purge
+
+2. Reinstall dependencies:
+   pip install --force-reinstall -r requirements.txt
+
+3. Check Python version compatibility
+4. Verify Npcap installation (Windows)
+5. Check file permissions
+
+📞 SUPPORT
+----------
+If you need help with updates:
+• Check documentation files
+• Review GitHub Issues
+• Contact support through GitHub
+
+🔄 AUTOMATION (ADVANCED USERS)
+------------------------------
+You can create a simple update script:
+
+@echo off
+echo Updating RDDS...
+cd /d "F:\\Hackthone\\RDDS"
+git stash
+git pull origin main
+git stash pop
+pip install -r requirements.txt
+echo Update complete!
+pause
+"""
             
-            # Show progress dialog
-            progress_dialog = tk.Toplevel(self.root)
-            progress_dialog.title("Downloading Update")
-            progress_dialog.geometry("400x150")
-            progress_dialog.resizable(False, False)
-            progress_dialog.transient(self.root)
-            progress_dialog.grab_set()
+            text_widget.insert(tk.END, instructions)
+            text_widget.config(state=tk.DISABLED)
             
-            # Center dialog
-            progress_dialog.update_idletasks()
-            x = (progress_dialog.winfo_screenwidth() // 2) - (progress_dialog.winfo_width() // 2)
-            y = (progress_dialog.winfo_screenheight() // 2) - (progress_dialog.winfo_height() // 2)
-            progress_dialog.geometry(f"+{x}+{y}")
+            # Buttons
+            button_frame = tk.Frame(instructions_window)
+            button_frame.pack(fill='x', padx=10, pady=10)
             
-            tk.Label(progress_dialog, text=f"Downloading RDDS v{version}...", font=('Segoe UI', 12)).pack(pady=20)
-            
-            progress_bar = ttk.Progressbar(progress_dialog, mode='indeterminate')
-            progress_bar.pack(fill='x', padx=20, pady=10)
-            progress_bar.start()
-            
-            # Download in background thread
-            def download_thread():
-                try:
-                    response = requests.get(download_url, stream=True)
-                    response.raise_for_status()
-                    
-                    # Save to temporary file
-                    temp_file = f"RDDS_v{version}.zip"
-                    with open(temp_file, 'wb') as f:
-                        for chunk in response.iter_content(chunk_size=8192):
-                            f.write(chunk)
-                    
-                    # Close progress dialog and show success
-                    progress_dialog.after(0, progress_dialog.destroy)
-                    self.root.after(0, lambda: messagebox.showinfo(
-                        "Download Complete", 
-                        f"Update downloaded to {temp_file}\n\n"
-                        "Please extract the zip file and replace the current installation."
-                    ))
-                    self.add_activity(f"✅ Update downloaded: {temp_file}")
-                    
-                except Exception as e:
-                    progress_dialog.after(0, progress_dialog.destroy)
-                    self.root.after(0, lambda: messagebox.showerror("Download Failed", f"Failed to download update: {str(e)}"))
-                    self.add_activity(f"❌ Update download failed: {str(e)}")
-            
-            threading.Thread(target=download_thread, daemon=True).start()
+            ttk.Button(button_frame, text="Close", command=instructions_window.destroy).pack(side='right', padx=5)
+            ttk.Button(button_frame, text="Open GitHub", command=self.open_github_releases).pack(side='right', padx=5)
             
         except Exception as e:
-            messagebox.showerror("Update Error", f"Failed to start download: {str(e)}")
-            self.add_activity(f"❌ Update error: {str(e)}")
-        
+            handle_rdds_error(e, "Manual Update Instructions", "ERROR", True, False)
+    
+    def open_github_releases(self):
+        """Open GitHub releases page in browser"""
+        try:
+            import webbrowser
+            webbrowser.open("https://github.com/StrykarBoston/RDDS/releases")
+        except Exception as e:
+            handle_rdds_error(e, "Open GitHub Releases", "ERROR", True, False)
+    
     def run(self):
         """Start the GUI application"""
-        self.root.mainloop()
-    
-    def display_iot_results(self, iot_profiles, report):
-        """Display IoT profiling results"""
-        # Clear existing items
-        for item in self.scan_tree.get_children():
-            self.scan_tree.delete(item)
-        
-        # Add IoT profiles to tree
-        for profile in iot_profiles:
-            risk_level = "🔴 HIGH" if profile['risk_score'] >= 70 else "🟡 MEDIUM" if profile['risk_score'] >= 40 else "🟢 LOW"
-            
-            self.scan_tree.insert('', 'end', values=(
-                profile['ip'],
-                profile['mac'],
-                profile['device_type'],
-                profile['manufacturer'],
-                f"{profile['risk_score']}%",
-                risk_level,
-                f"{len(profile['vulnerabilities'])} CVEs"
-            ))
-        
-        # Update dashboard with IoT summary
-        self.update_dashboard_iot_stats(report)
-    
-    def display_dhcp_results(self, summary, alerts):
-        """Display DHCP security results"""
-        # Clear existing items
-        for item in self.scan_tree.get_children():
-            self.scan_tree.delete(item)
-        
-        # Add DHCP servers
-        if summary['dhcp_servers'] > 0:
-            self.scan_tree.insert('', 'end', values=(
-                "DHCP Servers",
-                f"{summary['dhcp_servers']} total",
-                f"{summary['authorized_servers']} authorized",
-                f"{summary['active_leases']} active leases",
-                f"{summary['recent_alerts']} alerts",
-                "🔒 DHCP Security",
-                f"{summary['high_risk_alerts']} high risk"
-            ))
-        
-        # Add recent alerts
-        for alert in alerts[:10]:
-            severity_emoji = "🔴" if alert['severity'] == 'HIGH' else "🟡"
-            self.scan_tree.insert('', 'end', values=(
-                alert.get('timestamp', 'Unknown'),
-                alert['type'],
-                alert.get('source_mac', 'N/A'),
-                alert.get('server_ip', 'N/A'),
-                f"{severity_emoji} {alert['severity']}",
-                alert['message'][:50] + '...' if len(alert['message']) > 50 else alert['message'],
-                "DHCP Alert"
-            ))
-        
-        # Update dashboard with DHCP summary
-        self.update_dashboard_dhcp_stats(summary)
-    
-    def update_dashboard_iot_stats(self, report):
-        """Update dashboard with IoT statistics"""
-        # Update device count
-        if hasattr(self, 'device_count_label'):
-            self.device_count_label.config(text=f"Devices: {report['total_devices']}")
-        
-        # Update alert count
-        if hasattr(self, 'alert_count_label'):
-            self.alert_count_label.config(text=f"IoT Risks: {report['high_risk_devices']}")
-        
-        # Update status
-        if hasattr(self, 'status_indicator'):
-            if report['high_risk_devices'] > 0:
-                self.status_indicator.config(text="● High Risk IoT", fg=self.colors['danger'])
-            elif report['medium_risk_devices'] > 0:
-                self.status_indicator.config(text="● Medium Risk IoT", fg=self.colors['warning'])
-            else:
-                self.status_indicator.config(text="● IoT Secure", fg=self.colors['success'])
-    
-    def update_dashboard_dhcp_stats(self, summary):
-        """Update dashboard with DHCP statistics"""
-        # Update device count
-        if hasattr(self, 'device_count_label'):
-            self.device_count_label.config(text=f"DHCP Servers: {summary['dhcp_servers']}")
-        
-        # Update alert count
-        if hasattr(self, 'alert_count_label'):
-            self.alert_count_label.config(text=f"DHCP Alerts: {summary['recent_alerts']}")
-        
-        # Update status
-        if hasattr(self, 'status_indicator'):
-            if summary['high_risk_alerts'] > 0:
-                self.status_indicator.config(text="● DHCP Threats", fg=self.colors['danger'])
-            elif summary['recent_alerts'] > 0:
-                self.status_indicator.config(text="● DHCP Alerts", fg=self.colors['warning'])
-            else:
-                self.status_indicator.config(text="● DHCP Secure", fg=self.colors['success'])
-    
-    def display_traffic_results(self, report):
-        """Display traffic analysis results"""
-        # Clear existing items
-        for item in self.scan_tree.get_children():
-            self.scan_tree.delete(item)
-        
-        # Add bandwidth usage
-        usage = report['bandwidth_usage']
-        sorted_usage = sorted(usage.items(), key=lambda x: x[1], reverse=True)
-        
-        for i, (ip, percent) in enumerate(sorted_usage[:10]):
-            self.scan_tree.insert('', 'end', values=(
-                ip,
-                f"{percent:.1f}%",
-                "Bandwidth Usage",
-                f"Top {i+1}",
-                "📊" if percent > 10 else "📈",
-                f"{percent:.1f}% of total traffic",
-                "Traffic Analysis"
-            ))
-        
-        # Add top applications
-        for i, (app, count) in enumerate(report['top_applications'][:10]):
-            self.scan_tree.insert('', 'end', values=(
-                app,
-                str(count),
-                "Application",
-                f"Connections: {count}",
-                "🔧",
-                f"{count} connections detected",
-                "Traffic Analysis"
-            ))
-        
-        # Add security alerts
-        if report['data_exfiltration_suspects']:
-            for suspect in report['data_exfiltration_suspects'][:5]:
-                self.scan_tree.insert('', 'end', values=(
-                    suspect['src_ip'],
-                    suspect['dst_ip'],
-                    "Data Exfiltration",
-                    f"{suspect['bytes_transferred']/(1024*1024):.1f} MB",
-                    "🚨",
-                    suspect['risk_level'],
-                    "Traffic Analysis"
-                ))
-        
-        if report['ddos_attacks']:
-            for attack in report['ddos_attacks'][:5]:
-                self.scan_tree.insert('', 'end', values=(
-                    attack['target_ip'],
-                    str(attack['packets_per_second']),
-                    "DDoS Attack",
-                    attack['attack_type'],
-                    "💥",
-                    attack['severity'],
-                    "Traffic Analysis"
-                ))
-        
-        # Update dashboard with traffic stats
-        self.update_dashboard_traffic_stats(report)
-    
-    def update_dashboard_traffic_stats(self, report):
-        """Update dashboard with traffic statistics"""
-        # Update device count
-        if hasattr(self, 'device_count_label'):
-            self.device_count_label.config(text=f"Flows: {report['total_flows']}")
-        
-        # Update alert count
-        if hasattr(self, 'alert_count_label'):
-            total_alerts = len(report['data_exfiltration_suspects']) + len(report['ddos_attacks'])
-            self.alert_count_label.config(text=f"Threats: {total_alerts}")
-        
-        # Update status
-        if hasattr(self, 'status_indicator'):
-            total_threats = len(report['data_exfiltration_suspects']) + len(report['ddos_attacks'])
-            if total_threats > 5:
-                self.status_indicator.config(text="● High Threat Level", fg=self.colors['danger'])
-            elif total_threats > 0:
-                self.status_indicator.config(text="● Medium Threat Level", fg=self.colors['warning'])
-            else:
-                self.status_indicator.config(text="● Traffic Secure", fg=self.colors['success'])
-    
-    def display_ssl_results(self, report):
-        """Display SSL certificate monitoring results"""
-        # Clear existing items
-        for item in self.scan_tree.get_children():
-            self.scan_tree.delete(item)
-        
-        # Add certificate analysis results
-        for host, data in self.ssl_monitor.monitored_hosts.items():
-            cert_analysis = data['certificate']
-            risk_level = "🔴 HIGH" if cert_analysis['risk_score'] >= 70 else "🟡 MEDIUM" if cert_analysis['risk_score'] >= 40 else "🟢 LOW"
-            
-            self.scan_tree.insert('', 'end', values=(
-                host,
-                str(data['port']),
-                cert_analysis['subject'].get('common_name', 'Unknown'),
-                cert_analysis['issuer'].get('organization', 'Unknown'),
-                f"{cert_analysis['risk_score']}%",
-                risk_level,
-                f"{len(cert_analysis['alerts'])} alerts"
-            ))
-        
-        # Add certificate alerts
-        for alert in report['certificate_alerts'][:10]:
-            severity_emoji = "🔴" if alert['severity'] == 'HIGH' else "🟡"
-            self.scan_tree.insert('', 'end', values=(
-                alert['host'],
-                str(alert['port']),
-                alert['type'],
-                alert['message'],
-                severity_emoji,
-                alert['severity'],
-                "SSL Alert"
-            ))
-        
-        # Update dashboard with SSL stats
-        self.update_dashboard_ssl_stats(report)
-    
-    def display_advanced_results(self, report):
-        """Display advanced attack detection results"""
-        # Clear existing items
-        for item in self.scan_tree.get_children():
-            self.scan_tree.delete(item)
-        
-        # Add attack summary
-        self.scan_tree.insert('', 'end', values=(
-            "Attack Summary",
-            str(report['total_attacks']),
-            f"High: {report['high_severity']}",
-            f"Medium: {report['medium_severity']}",
-            f"Low: {report['low_severity']}",
-            "📊",
-            "Overall",
-            "Attack Detection"
-        ))
-        
-        # Add attack types
-        for attack_type, count in report['attack_types'].items():
-            details = self.advanced_detector._get_attack_details(attack_type)
-            self.scan_tree.insert('', 'end', values=(
-                details['name'],
-                str(count),
-                attack_type,
-                details['description'][:50] + '...' if len(details['description']) > 50 else details['description'],
-                "⚔️",
-                f"Detected {count} times",
-                "Attack Detection"
-            ))
-        
-        # Add mitigation recommendations
-        for rec in report['mitigation_recommendations']:
-            priority_emoji = "🔴" if rec['priority'] == 'HIGH' else "🟡"
-            self.scan_tree.insert('', 'end', values=(
-                rec['attack'],
-                rec['recommendation'],
-                "Mitigation",
-                rec['description'][:50] + '...' if len(rec['description']) > 50 else rec['description'],
-                priority_emoji,
-                rec['priority'],
-                "Attack Detection"
-            ))
-        
-        # Update dashboard with advanced attack stats
-        self.update_dashboard_advanced_stats(report)
-    
-    def update_dashboard_ssl_stats(self, report):
-        """Update dashboard with SSL certificate statistics"""
-        # Update device count
-        if hasattr(self, 'device_count_label'):
-            self.device_count_label.config(text=f"Hosts: {report['total_hosts']}")
-        
-        # Update alert count
-        if hasattr(self, 'alert_count_label'):
-            self.alert_count_label.config(text=f"SSL Alerts: {len(report['certificate_alerts'])}")
-        
-        # Update status
-        if hasattr(self, 'status_indicator'):
-            if report['high_risk_certificates'] > 0:
-                self.status_indicator.config(text="● SSL Risk", fg=self.colors['danger'])
-            elif report['medium_risk_certificates'] > 0:
-                self.status_indicator.config(text="● SSL Warning", fg=self.colors['warning'])
-            else:
-                self.status_indicator.config(text="● SSL Secure", fg=self.colors['success'])
-    
-    def update_dashboard_advanced_stats(self, report):
-        """Update dashboard with advanced attack statistics"""
-        # Update device count
-        if hasattr(self, 'device_count_label'):
-            self.device_count_label.config(text=f"Attacks: {report['total_attacks']}")
-        
-        # Update alert count
-        if hasattr(self, 'alert_count_label'):
-            self.alert_count_label.config(text=f"Threats: {report['high_severity']}")
-        
-        # Update status
-        if hasattr(self, 'status_indicator'):
-            if report['high_severity'] > 5:
-                self.status_indicator.config(text="● Under Attack", fg=self.colors['danger'])
-            elif report['medium_severity'] > 0:
-                self.status_indicator.config(text="● Attack Warning", fg=self.colors['warning'])
-            else:
-                self.status_indicator.config(text="● Network Secure", fg=self.colors['success'])
+        try:
+            self.root.mainloop()
+        except Exception as e:
+            handle_rdds_error(e, "GUI Main Loop", "CRITICAL", True, True)
 
 if __name__ == "__main__":
-    app = ModernRDDS_GUI()
-    app.run()
+    try:
+        app = ModernRDDS_GUI()
+        app.run()
+    except Exception as e:
+        handle_rdds_error(e, "Application Startup", "CRITICAL", True, True)

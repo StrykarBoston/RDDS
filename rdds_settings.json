@@ -1,0 +1,104 @@
+{
+    "network_discovery": {
+        "scan_timeout": 10,
+        "max_threads": 50,
+        "ping_timeout": 2,
+        "arp_timeout": 3,
+        "retry_count": 3,
+        "scan_delay": 0.1
+    },
+    "rogue_detection": {
+        "arp_spoof_threshold": 5,
+        "mac_spoof_threshold": 3,
+        "detection_interval": 30,
+        "alert_cooldown": 300,
+        "auto_whitelist": false,
+        "strict_mode": false
+    },
+    "rogue_ap_detection": {
+        "scan_duration": 60,
+        "channel_hop": true,
+        "channel_hop_interval": 0.5,
+        "signal_threshold": -80,
+        "max_aps": 100,
+        "evil_twin_detection": true,
+        "rf_fingerprinting": false
+    },
+    "iot_profiling": {
+        "scan_timeout": 15,
+        "port_scan_timeout": 3,
+        "max_ports": 1000,
+        "fingerprint_timeout": 10,
+        "device_database": "default",
+        "auto_categorize": true,
+        "deep_inspection": false
+    },
+    "dhcp_security": {
+        "monitor_duration": 300,
+        "dhcp_timeout": 5,
+        "max_servers": 10,
+        "detect_starvation": true,
+        "detect_spoofing": true,
+        "alert_threshold": 5,
+        "auto_block": false
+    },
+    "traffic_analysis": {
+        "monitor_duration": 300,
+        "capture_filter": "",
+        "max_flows": 10000,
+        "flow_timeout": 60,
+        "bandwidth_threshold": 1000000,
+        "ddos_threshold": 1000,
+        "exfiltration_threshold": 10000000,
+        "protocol_analysis": true,
+        "application_identification": true
+    },
+    "ssl_monitoring": {
+        "monitor_duration": 300,
+        "connection_timeout": 10,
+        "max_hosts": 100,
+        "expiry_threshold": 30,
+        "key_size_threshold": 2048,
+        "check_revocation": true,
+        "check_transparency": false,
+        "strict_validation": false
+    },
+    "advanced_attack_detection": {
+        "monitor_duration": 300,
+        "packet_buffer_size": 1000,
+        "mac_flood_threshold": 100,
+        "syn_flood_threshold": 1000,
+        "udp_flood_threshold": 1000,
+        "icmp_flood_threshold": 500,
+        "port_scan_threshold": 50,
+        "fragmentation_threshold": 100,
+        "enable_layer2_detection": true,
+        "enable_layer3_detection": true,
+        "enable_layer4_detection": true,
+        "enable_mitm_detection": true
+    },
+    "general": {
+        "log_level": "INFO",
+        "log_file": "rdds.log",
+        "max_log_size": 10485760,
+        "backup_count": 5,
+        "auto_save": true,
+        "save_interval": 300,
+        "notification_enabled": true,
+        "email_notifications": false,
+        "sound_alerts": true
+    },
+    "gui": {
+        "theme": "dark",
+        "window_size": [
+            1200,
+            800
+        ],
+        "auto_refresh": true,
+        "refresh_interval": 5,
+        "max_display_items": 1000,
+        "show_tooltips": true,
+        "confirm_actions": true,
+        "minimize_to_tray": false
+    }
+}
