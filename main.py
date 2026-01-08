@@ -13,6 +13,9 @@ from deep_packet_inspector import DeepPacketInspector
 from enhanced_rogue_ap_detector import EnhancedRogueAPDetector
 from iot_profiler import IoTProfiler
 from dhcp_security import DHCPSecurityMonitor
+from network_traffic_analyzer import NetworkTrafficAnalyzer
+from ssl_tls_monitor import SSLTLSMonitor
+from advanced_attack_detector import AdvancedAttackDetector
 
 # ============================================
 # ADMINISTRATOR PRIVILEGES CHECK
@@ -82,6 +85,9 @@ class RogueDetectionSystem:
         self.dpi_inspector = DeepPacketInspector()
         self.iot_profiler = IoTProfiler()
         self.dhcp_monitor = DHCPSecurityMonitor()
+        self.traffic_analyzer = NetworkTrafficAnalyzer()
+        self.ssl_monitor = SSLTLSMonitor()
+        self.advanced_detector = AdvancedAttackDetector()
         self.logger = SecurityLogger()
         
         print("""
@@ -313,6 +319,140 @@ class RogueDetectionSystem:
         print("\n✅ DHCP monitoring stopped")
         
         return recent_alerts
+    
+    def run_traffic_analysis(self, duration=300):
+        """Network Traffic Analysis with NetFlow/sFlow Integration"""
+        print("\n📊 Starting Network Traffic Analysis...")
+        print("="*60)
+        
+        # Start traffic monitoring
+        interface = self.scanner.interface
+        print(f"[*] Starting traffic monitoring on {interface}...")
+        print(f"[*] Monitoring duration: {duration} seconds")
+        
+        # Start monitoring
+        report = self.traffic_analyzer.start_monitoring(interface, duration)
+        
+        if not report:
+            print("❌ Traffic monitoring failed")
+            return None
+        
+        # Display results
+        print(f"\n📈 Traffic Analysis Results:")
+        print(f"  Total Flows: {report['total_flows']}")
+        print(f"  Total Bandwidth: {report['total_bandwidth'] / (1024*1024):.2f} MB")
+        print(f"  Suspicious IPs: {len(report['suspicious_ips'])}")
+        
+        # Bandwidth usage
+        print(f"\n📊 Bandwidth Usage (Top 10):")
+        usage = report['bandwidth_usage']
+        sorted_usage = sorted(usage.items(), key=lambda x: x[1], reverse=True)
+        
+        for i, (ip, percent) in enumerate(sorted_usage[:10]):
+            print(f"  {i+1:2d}. {ip:15} | {percent:5.1f}%")
+        
+        # Top applications
+        print(f"\n🔧 Top Applications:")
+        for i, (app, count) in enumerate(report['top_applications'][:10]):
+            print(f"  {i+1:2d}. {app:15} | {count:6d} connections")
+        
+        # Data exfiltration suspects
+        if report['data_exfiltration_suspects']:
+            print(f"\n🚨 Data Exfiltration Suspects:")
+            for suspect in report['data_exfiltration_suspects'][:5]:
+                print(f"  🔴 {suspect['src_ip']} -> {suspect['dst_ip']}")
+                print(f"     Bytes: {suspect['bytes_transferred'] / (1024*1024):.2f} MB | Risk: {suspect['risk_level']}")
+        
+        # DDoS attacks
+        if report['ddos_attacks']:
+            print(f"\n💥 DDoS Attacks Detected:")
+            for attack in report['ddos_attacks'][:5]:
+                print(f"  🔴 Target: {attack['target_ip']}")
+                print(f"     Rate: {attack['packets_per_second']} packets/sec | Severity: {attack['severity']}")
+        
+        # Connection summary
+        print(f"\n🔗 Connection Summary (Top 10):")
+        connections = report['connection_summary']
+        sorted_connections = sorted(connections.items(), 
+                              key=lambda x: len(x[1]), reverse=True)
+        
+        for i, (src_ip, dsts) in enumerate(sorted_connections[:10]):
+            print(f"  {i+1:2d}. {src_ip:15} -> {len(dsts)} destinations")
+        
+        return report
+    
+    def run_ssl_certificate_monitoring(self, hosts, duration=300):
+        """SSL/TLS Certificate Monitoring"""
+        print("\n🔒 Starting SSL/TLS Certificate Monitoring...")
+        print("="*60)
+        
+        print(f"[*] Monitoring {len(hosts)} hosts for {duration} seconds...")
+        
+        # Start certificate monitoring
+        report = self.ssl_monitor.start_monitoring(hosts, duration)
+        
+        if not report:
+            print("❌ Certificate monitoring failed")
+            return None
+        
+        # Display results
+        print(f"\n🔐 Certificate Analysis Results:")
+        print(f"  Total Hosts: {report['total_hosts']}")
+        print(f"  High Risk: {report['high_risk_certificates']}")
+        print(f"  Medium Risk: {report['medium_risk_certificates']}")
+        print(f"  Low Risk: {report['low_risk_certificates']}")
+        print(f"  Total Alerts: {len(report['certificate_alerts'])}")
+        
+        # Show certificate alerts
+        if report['certificate_alerts']:
+            print(f"\n🚨 Certificate Security Alerts:")
+            for alert in report['certificate_alerts'][:10]:
+                severity_emoji = "🔴" if alert['severity'] == 'HIGH' else "🟡"
+                print(f"  {severity_emoji} [{alert['severity']}] {alert['type']}: {alert['message']}")
+                print(f"     Host: {alert['host']}:{alert['port']}")
+                print(f"     Details: {alert['description']}")
+        
+        return report
+    
+    def run_advanced_attack_detection(self, duration=60):
+        """Advanced Attack Detection Beyond ARP Spoofing"""
+        print("\n⚔️ Starting Advanced Attack Detection...")
+        print("="*60)
+        
+        interface = self.scanner.interface
+        print(f"[*] Starting advanced attack detection on {interface}...")
+        print(f"[*] Monitoring duration: {duration} seconds")
+        
+        # Start advanced attack detection
+        report = self.advanced_detector.start_monitoring(interface, duration)
+        
+        if not report:
+            print("❌ Advanced attack detection failed")
+            return None
+        
+        # Display results
+        print(f"\n⚔️ Advanced Attack Detection Results:")
+        print(f"  Total Attacks: {report['total_attacks']}")
+        print(f"  High Severity: {report['high_severity']}")
+        print(f"  Medium Severity: {report['medium_severity']}")
+        print(f"  Low Severity: {report['low_severity']}")
+        
+        # Show attack types
+        if report['attack_types']:
+            print(f"\n🎯 Attack Types Detected:")
+            for attack_type, count in report['attack_types'].items():
+                details = self.advanced_detector._get_attack_details(attack_type)
+                print(f"  {count:3d}x {details['name']}")
+                print(f"     {details['description']}")
+        
+        # Show mitigation recommendations
+        if report['mitigation_recommendations']:
+            print(f"\n🛡️ Mitigation Recommendations:")
+            for rec in report['mitigation_recommendations']:
+                priority_emoji = "🔴" if rec['priority'] == 'HIGH' else "🟡"
+                print(f"  {priority_emoji} {rec['attack']}: {rec['recommendation']}")
+        
+        return report
     
     def monitor_attacks(self, duration=60):
         """Real-time attack monitoring"""
@@ -585,14 +725,17 @@ class RogueDetectionSystem:
             print("2. Run Enhanced Security Scan (NEW)")
             print("3. IoT Device Profiling & Risk Assessment")
             print("4. DHCP Security Monitoring")
-            print("5. Monitor for Attacks (Real-time)")
-            print("6. View Whitelist")
-            print("7. Add Device to Whitelist")
-            print("8. Edit Device in Whitelist")
-            print("9. Remove Device from Whitelist")
-            print("10. Generate Report")
-            print("11. Manual Update Instructions")
-            print("12. Exit")
+            print("5. Network Traffic Analysis (NetFlow/sFlow)")
+            print("6. SSL/TLS Certificate Monitoring")
+            print("7. Advanced Attack Detection")
+            print("8. Monitor for Attacks (Real-time)")
+            print("9. View Whitelist")
+            print("10. Add Device to Whitelist")
+            print("11. Edit Device in Whitelist")
+            print("12. Remove Device from Whitelist")
+            print("13. Generate Report")
+            print("14. Manual Update Instructions")
+            print("15. Exit")
             
             choice = input("\nSelect option (or 'back' to return): ").strip()
             
@@ -624,30 +767,56 @@ class RogueDetectionSystem:
                 
             elif choice == '5':
                 try:
+                    duration = int(input("Traffic analysis duration (seconds, default=300): ") or "300")
+                    self.run_traffic_analysis(duration)
+                except ValueError:
+                    print("❌ Please enter a valid number!")
+                    
+            elif choice == '6':
+                hosts_input = input("Enter hosts to monitor (comma-separated): ").strip()
+                if hosts_input:
+                    hosts = [h.strip() for h in hosts_input.split(',')]
+                    try:
+                        duration = int(input("Monitoring duration (seconds, default=300): ") or "300")
+                        self.run_ssl_certificate_monitoring(hosts, duration)
+                    except ValueError:
+                        print("❌ Please enter a valid number!")
+                else:
+                    print("❌ No hosts specified!")
+                    
+            elif choice == '7':
+                try:
+                    duration = int(input("Advanced attack detection duration (seconds, default=60): ") or "60")
+                    self.run_advanced_attack_detection(duration)
+                except ValueError:
+                    print("❌ Please enter a valid number!")
+                    
+            elif choice == '8':
+                try:
                     duration = int(input("Monitor duration (seconds): "))
                     self.monitor_attacks(duration)
                 except ValueError:
                     print("❌ Please enter a valid number!")
-                
-            elif choice == '6':
+                    
+            elif choice == '9':
                 self.view_whitelist()
                 
-            elif choice == '7':
+            elif choice == '10':
                 self.add_device_to_whitelist()
                 
-            elif choice == '8':
+            elif choice == '11':
                 self.edit_device_from_whitelist()
                 
-            elif choice == '9':
+            elif choice == '12':
                 self.remove_device_from_whitelist()
                 
-            elif choice == '10':
+            elif choice == '13':
                 self.generate_report_interactive()
                 
-            elif choice == '11':
+            elif choice == '14':
                 self.show_manual_update_info()
                 
-            elif choice == '12':
+            elif choice == '15':
                 print("\n👋 Exiting...")
                 break
             else:

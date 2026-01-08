@@ -35,12 +35,26 @@ tabulate>=0.9.0  # For table formatting
 # DHCP Security Monitoring
 # netifaces>=0.11.0  # For network interface detection (optional)
 
+# Network Traffic Analysis (NetFlow/sFlow)
+# Additional libraries for enterprise traffic analysis
+# netflowlib>=0.4.0  # For NetFlow processing (optional)
+# sflow>=0.2.0  # For sFlow processing (optional)
+# ipaddress>=1.0.23  # For IP flow analysis (built-in with Python 3.12+)
+
+# SSL/TLS Certificate Monitoring
+# Additional libraries for certificate analysis
+# cryptography>=3.4.8  # For X.509 certificate parsing
+# pyopenssl>=23.0.0  # For OpenSSL certificate operations (optional)
+# certvalidator>=0.1.3  # For certificate validation (optional)
+
+# Advanced Attack Detection
+# Additional libraries for advanced attack detection
+# scapy>=2.4.5  # For packet capture and analysis
+# netifaces>=0.11.0  # For network interface detection
+# psutil>=5.9.0  # For system monitoring
+# threading>=1.0  # Built-in with Python
+
 # Development and testing (optional)
 # pytest>=7.0.0
 # pytest-cov>=4.0.0
 
-# Machine Learning dependencies removed - ML features disabled
-# To re-enable ML features, uncomment the following:
-# numpy>=1.24.0
-# scikit-learn>=1.3.0
-# joblib>=1.3.0

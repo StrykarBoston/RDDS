@@ -17,6 +17,9 @@ from deep_packet_inspector import DeepPacketInspector
 from enhanced_rogue_ap_detector import EnhancedRogueAPDetector
 from iot_profiler import IoTProfiler
 from dhcp_security import DHCPSecurityMonitor
+from network_traffic_analyzer import NetworkTrafficAnalyzer
+from ssl_tls_monitor import SSLTLSMonitor
+from advanced_attack_detector import AdvancedAttackDetector
 from settings_config import SettingsManager, SettingsDialog
 from npcapy_check import check_npcap_installation, install_npcap_instructions
 
@@ -39,6 +42,9 @@ class ModernRDDS_GUI:
         self.dpi_inspector = DeepPacketInspector()
         self.iot_profiler = IoTProfiler()
         self.dhcp_monitor = DHCPSecurityMonitor()
+        self.traffic_analyzer = NetworkTrafficAnalyzer()
+        self.ssl_monitor = SSLTLSMonitor()
+        self.advanced_detector = AdvancedAttackDetector()
         self.logger = SecurityLogger()
         self.settings_manager = SettingsManager()
         
@@ -389,6 +395,30 @@ class ModernRDDS_GUI:
         )
         dhcp_radio.pack(side='left', padx=5)
         
+        traffic_radio = ttk.Radiobutton(
+            scan_type_frame,
+            text="Traffic Analysis",
+            variable=self.scan_type,
+            value="traffic"
+        )
+        traffic_radio.pack(side='left', padx=5)
+        
+        ssl_radio = ttk.Radiobutton(
+            scan_type_frame,
+            text="SSL Certificate Monitor",
+            variable=self.scan_type,
+            value="ssl"
+        )
+        ssl_radio.pack(side='left', padx=5)
+        
+        advanced_radio = ttk.Radiobutton(
+            scan_type_frame,
+            text="Advanced Attack Detection",
+            variable=self.scan_type,
+            value="advanced"
+        )
+        advanced_radio.pack(side='left', padx=5)
+        
         # Scan button
         self.scan_button = ttk.Button(
             control_frame,
@@ -681,6 +711,12 @@ class ModernRDDS_GUI:
             self.update_status("Starting IoT device profiling...")
         elif scan_type == "dhcp":
             self.update_status("Starting DHCP security monitoring...")
+        elif scan_type == "traffic":
+            self.update_status("Starting network traffic analysis...")
+        elif scan_type == "ssl":
+            self.update_status("Starting SSL certificate monitoring...")
+        elif scan_type == "advanced":
+            self.update_status("Starting advanced attack detection...")
         else:
             self.update_status("Starting network scan...")
         
@@ -693,6 +729,12 @@ class ModernRDDS_GUI:
             self.current_scan_thread = threading.Thread(target=self._perform_iot_scan, daemon=True)
         elif scan_type == "dhcp":
             self.current_scan_thread = threading.Thread(target=self._perform_dhcp_scan, daemon=True)
+        elif scan_type == "traffic":
+            self.current_scan_thread = threading.Thread(target=self._perform_traffic_scan, daemon=True)
+        elif scan_type == "ssl":
+            self.current_scan_thread = threading.Thread(target=self._perform_ssl_scan, daemon=True)
+        elif scan_type == "advanced":
+            self.current_scan_thread = threading.Thread(target=self._perform_advanced_scan, daemon=True)
         self.current_scan_thread.start()
         
         # Check for results
@@ -931,6 +973,125 @@ class ModernRDDS_GUI:
             elif "No such device" in error_msg:
                 error_msg = "Network interface not available. Check your connection."
             self.scan_queue.put(("error", error_msg))
+    
+    def _perform_traffic_scan(self):
+        """Perform network traffic analysis scan"""
+        try:
+            # Step 1: Start traffic monitoring
+            self.scan_queue.put(("progress", 10))
+            self.scan_queue.put(("status", "Starting traffic monitoring..."))
+            
+            interface = self.scanner.interface
+            self.scan_queue.put(("status", f"Monitoring on {interface}..."))
+            
+            # Step 2: Monitor for 5 minutes (300 seconds)
+            self.scan_queue.put(("progress", 20))
+            duration = 300  # 5 minutes for GUI
+            
+            # Start monitoring with progress updates
+            def progress_updater():
+                for i in range(0, duration, 30):  # Update every 30 seconds
+                    progress = 20 + (i * 60 // duration)  # 20% to 80%
+                    self.scan_queue.put(("progress", progress))
+                    self.scan_queue.put(("status", f"Analyzing traffic... {i//60+1}/{duration//60} min"))
+                    time.sleep(30)
+            
+            # Start progress updater in separate thread
+            progress_thread = threading.Thread(target=progress_updater, daemon=True)
+            progress_thread.start()
+            
+            # Start traffic monitoring
+            report = self.traffic_analyzer.start_monitoring(interface, duration)
+            
+            if not report:
+                self.scan_queue.put(("error", "Traffic monitoring failed"))
+                return
+            
+            # Step 3: Generate report
+            self.scan_queue.put(("progress", 90))
+            self.scan_queue.put(("status", "Generating traffic analysis report..."))
+            
+            # Send results
+            self.scan_queue.put(("progress", 100))
+            self.scan_queue.put(("traffic_results", report))
+            
+        except Exception as e:
+            error_msg = str(e)
+            if "Permission denied" in error_msg:
+                error_msg = "Insufficient privileges. Please run as Administrator."
+            elif "No such device" in error_msg:
+                error_msg = "Network interface not available. Check your connection."
+            self.scan_queue.put(("error", error_msg))
+    
+    def _perform_ssl_scan(self):
+        """Perform SSL certificate monitoring scan"""
+        try:
+            # Step 1: Get hosts to monitor
+            self.scan_queue.put(("progress", 10))
+            self.scan_queue.put(("status", "Getting hosts to monitor..."))
+            
+            # For demo, monitor common SSL ports
+            hosts = ['google.com', 'github.com', 'stackoverflow.com', 'microsoft.com']
+            
+            # Step 2: Start SSL monitoring
+            self.scan_queue.put(("progress", 20))
+            self.scan_queue.put(("status", f"Monitoring {len(hosts)} hosts..."))
+            
+            # Start certificate monitoring
+            report = self.ssl_monitor.start_monitoring(hosts, 60)  # 1 minute for GUI
+            
+            if not report:
+                self.scan_queue.put(("error", "SSL certificate monitoring failed"))
+                return
+            
+            # Step 3: Generate report
+            self.scan_queue.put(("progress", 90))
+            self.scan_queue.put(("status", "Generating certificate report..."))
+            
+            # Send results
+            self.scan_queue.put(("progress", 100))
+            self.scan_queue.put(("ssl_results", report))
+            
+        except Exception as e:
+            error_msg = str(e)
+            if "Permission denied" in error_msg:
+                error_msg = "Insufficient privileges. Please run as Administrator."
+            elif "No such device" in error_msg:
+                error_msg = "Network interface not available. Check your connection."
+            self.scan_queue.put(("error", error_msg))
+    
+    def _perform_advanced_scan(self):
+        """Perform advanced attack detection scan"""
+        try:
+            # Step 1: Start advanced attack detection
+            self.scan_queue.put(("progress", 10))
+            self.scan_queue.put(("status", "Starting advanced attack detection..."))
+            
+            interface = self.scanner.interface
+            self.scan_queue.put(("status", f"Monitoring on {interface}..."))
+            
+            # Start advanced attack detection
+            report = self.advanced_detector.start_monitoring(interface, 60)  # 1 minute for GUI
+            
+            if not report:
+                self.scan_queue.put(("error", "Advanced attack detection failed"))
+                return
+            
+            # Step 2: Generate report
+            self.scan_queue.put(("progress", 90))
+            self.scan_queue.put(("status", "Generating attack detection report..."))
+            
+            # Send results
+            self.scan_queue.put(("progress", 100))
+            self.scan_queue.put(("advanced_results", report))
+            
+        except Exception as e:
+            error_msg = str(e)
+            if "Permission denied" in error_msg:
+                error_msg = "Insufficient privileges. Please run as Administrator."
+            elif "No such device" in error_msg:
+                error_msg = "Network interface not available. Check your connection."
+            self.scan_queue.put(("error", error_msg))
             
     def check_scan_results(self):
         """Check for scan results with progress updates"""
@@ -977,6 +1138,36 @@ class ModernRDDS_GUI:
                     self.status_indicator.config(text="● Ready", fg=self.colors['success'])
                     self.update_status("DHCP security monitoring completed")
                     self.add_activity("✅ DHCP security monitoring completed successfully")
+                    
+                elif result[0] == "traffic_results":
+                    report = result[1]
+                    self.display_traffic_results(report)
+                    self.scan_progress.stop()
+                    self.scan_progress['value'] = 100
+                    self.scan_button.config(text="🚀 Start Scan", state='normal')
+                    self.status_indicator.config(text="● Ready", fg=self.colors['success'])
+                    self.update_status("Traffic analysis completed")
+                    self.add_activity("✅ Traffic analysis completed successfully")
+                    
+                elif result[0] == "ssl_results":
+                    report = result[1]
+                    self.display_ssl_results(report)
+                    self.scan_progress.stop()
+                    self.scan_progress['value'] = 100
+                    self.scan_button.config(text="🚀 Start Scan", state='normal')
+                    self.status_indicator.config(text="● Ready", fg=self.colors['success'])
+                    self.update_status("SSL certificate monitoring completed")
+                    self.add_activity("✅ SSL certificate monitoring completed successfully")
+                    
+                elif result[0] == "advanced_results":
+                    report = result[1]
+                    self.display_advanced_results(report)
+                    self.scan_progress.stop()
+                    self.scan_progress['value'] = 100
+                    self.scan_button.config(text="🚀 Start Scan", state='normal')
+                    self.status_indicator.config(text="● Ready", fg=self.colors['success'])
+                    self.update_status("Advanced attack detection completed")
+                    self.add_activity("✅ Advanced attack detection completed successfully")
                     
                 elif result[0] == "error":
                     messagebox.showerror("Scan Error", f"Scan failed: {result[1]}")
@@ -1700,6 +1891,210 @@ class ModernRDDS_GUI:
                 self.status_indicator.config(text="● DHCP Alerts", fg=self.colors['warning'])
             else:
                 self.status_indicator.config(text="● DHCP Secure", fg=self.colors['success'])
+    
+    def display_traffic_results(self, report):
+        """Display traffic analysis results"""
+        # Clear existing items
+        for item in self.scan_tree.get_children():
+            self.scan_tree.delete(item)
+        
+        # Add bandwidth usage
+        usage = report['bandwidth_usage']
+        sorted_usage = sorted(usage.items(), key=lambda x: x[1], reverse=True)
+        
+        for i, (ip, percent) in enumerate(sorted_usage[:10]):
+            self.scan_tree.insert('', 'end', values=(
+                ip,
+                f"{percent:.1f}%",
+                "Bandwidth Usage",
+                f"Top {i+1}",
+                "📊" if percent > 10 else "📈",
+                f"{percent:.1f}% of total traffic",
+                "Traffic Analysis"
+            ))
+        
+        # Add top applications
+        for i, (app, count) in enumerate(report['top_applications'][:10]):
+            self.scan_tree.insert('', 'end', values=(
+                app,
+                str(count),
+                "Application",
+                f"Connections: {count}",
+                "🔧",
+                f"{count} connections detected",
+                "Traffic Analysis"
+            ))
+        
+        # Add security alerts
+        if report['data_exfiltration_suspects']:
+            for suspect in report['data_exfiltration_suspects'][:5]:
+                self.scan_tree.insert('', 'end', values=(
+                    suspect['src_ip'],
+                    suspect['dst_ip'],
+                    "Data Exfiltration",
+                    f"{suspect['bytes_transferred']/(1024*1024):.1f} MB",
+                    "🚨",
+                    suspect['risk_level'],
+                    "Traffic Analysis"
+                ))
+        
+        if report['ddos_attacks']:
+            for attack in report['ddos_attacks'][:5]:
+                self.scan_tree.insert('', 'end', values=(
+                    attack['target_ip'],
+                    str(attack['packets_per_second']),
+                    "DDoS Attack",
+                    attack['attack_type'],
+                    "💥",
+                    attack['severity'],
+                    "Traffic Analysis"
+                ))
+        
+        # Update dashboard with traffic stats
+        self.update_dashboard_traffic_stats(report)
+    
+    def update_dashboard_traffic_stats(self, report):
+        """Update dashboard with traffic statistics"""
+        # Update device count
+        if hasattr(self, 'device_count_label'):
+            self.device_count_label.config(text=f"Flows: {report['total_flows']}")
+        
+        # Update alert count
+        if hasattr(self, 'alert_count_label'):
+            total_alerts = len(report['data_exfiltration_suspects']) + len(report['ddos_attacks'])
+            self.alert_count_label.config(text=f"Threats: {total_alerts}")
+        
+        # Update status
+        if hasattr(self, 'status_indicator'):
+            total_threats = len(report['data_exfiltration_suspects']) + len(report['ddos_attacks'])
+            if total_threats > 5:
+                self.status_indicator.config(text="● High Threat Level", fg=self.colors['danger'])
+            elif total_threats > 0:
+                self.status_indicator.config(text="● Medium Threat Level", fg=self.colors['warning'])
+            else:
+                self.status_indicator.config(text="● Traffic Secure", fg=self.colors['success'])
+    
+    def display_ssl_results(self, report):
+        """Display SSL certificate monitoring results"""
+        # Clear existing items
+        for item in self.scan_tree.get_children():
+            self.scan_tree.delete(item)
+        
+        # Add certificate analysis results
+        for host, data in self.ssl_monitor.monitored_hosts.items():
+            cert_analysis = data['certificate']
+            risk_level = "🔴 HIGH" if cert_analysis['risk_score'] >= 70 else "🟡 MEDIUM" if cert_analysis['risk_score'] >= 40 else "🟢 LOW"
+            
+            self.scan_tree.insert('', 'end', values=(
+                host,
+                str(data['port']),
+                cert_analysis['subject'].get('common_name', 'Unknown'),
+                cert_analysis['issuer'].get('organization', 'Unknown'),
+                f"{cert_analysis['risk_score']}%",
+                risk_level,
+                f"{len(cert_analysis['alerts'])} alerts"
+            ))
+        
+        # Add certificate alerts
+        for alert in report['certificate_alerts'][:10]:
+            severity_emoji = "🔴" if alert['severity'] == 'HIGH' else "🟡"
+            self.scan_tree.insert('', 'end', values=(
+                alert['host'],
+                str(alert['port']),
+                alert['type'],
+                alert['message'],
+                severity_emoji,
+                alert['severity'],
+                "SSL Alert"
+            ))
+        
+        # Update dashboard with SSL stats
+        self.update_dashboard_ssl_stats(report)
+    
+    def display_advanced_results(self, report):
+        """Display advanced attack detection results"""
+        # Clear existing items
+        for item in self.scan_tree.get_children():
+            self.scan_tree.delete(item)
+        
+        # Add attack summary
+        self.scan_tree.insert('', 'end', values=(
+            "Attack Summary",
+            str(report['total_attacks']),
+            f"High: {report['high_severity']}",
+            f"Medium: {report['medium_severity']}",
+            f"Low: {report['low_severity']}",
+            "📊",
+            "Overall",
+            "Attack Detection"
+        ))
+        
+        # Add attack types
+        for attack_type, count in report['attack_types'].items():
+            details = self.advanced_detector._get_attack_details(attack_type)
+            self.scan_tree.insert('', 'end', values=(
+                details['name'],
+                str(count),
+                attack_type,
+                details['description'][:50] + '...' if len(details['description']) > 50 else details['description'],
+                "⚔️",
+                f"Detected {count} times",
+                "Attack Detection"
+            ))
+        
+        # Add mitigation recommendations
+        for rec in report['mitigation_recommendations']:
+            priority_emoji = "🔴" if rec['priority'] == 'HIGH' else "🟡"
+            self.scan_tree.insert('', 'end', values=(
+                rec['attack'],
+                rec['recommendation'],
+                "Mitigation",
+                rec['description'][:50] + '...' if len(rec['description']) > 50 else rec['description'],
+                priority_emoji,
+                rec['priority'],
+                "Attack Detection"
+            ))
+        
+        # Update dashboard with advanced attack stats
+        self.update_dashboard_advanced_stats(report)
+    
+    def update_dashboard_ssl_stats(self, report):
+        """Update dashboard with SSL certificate statistics"""
+        # Update device count
+        if hasattr(self, 'device_count_label'):
+            self.device_count_label.config(text=f"Hosts: {report['total_hosts']}")
+        
+        # Update alert count
+        if hasattr(self, 'alert_count_label'):
+            self.alert_count_label.config(text=f"SSL Alerts: {len(report['certificate_alerts'])}")
+        
+        # Update status
+        if hasattr(self, 'status_indicator'):
+            if report['high_risk_certificates'] > 0:
+                self.status_indicator.config(text="● SSL Risk", fg=self.colors['danger'])
+            elif report['medium_risk_certificates'] > 0:
+                self.status_indicator.config(text="● SSL Warning", fg=self.colors['warning'])
+            else:
+                self.status_indicator.config(text="● SSL Secure", fg=self.colors['success'])
+    
+    def update_dashboard_advanced_stats(self, report):
+        """Update dashboard with advanced attack statistics"""
+        # Update device count
+        if hasattr(self, 'device_count_label'):
+            self.device_count_label.config(text=f"Attacks: {report['total_attacks']}")
+        
+        # Update alert count
+        if hasattr(self, 'alert_count_label'):
+            self.alert_count_label.config(text=f"Threats: {report['high_severity']}")
+        
+        # Update status
+        if hasattr(self, 'status_indicator'):
+            if report['high_severity'] > 5:
+                self.status_indicator.config(text="● Under Attack", fg=self.colors['danger'])
+            elif report['medium_severity'] > 0:
+                self.status_indicator.config(text="● Attack Warning", fg=self.colors['warning'])
+            else:
+                self.status_indicator.config(text="● Network Secure", fg=self.colors['success'])
 
 if __name__ == "__main__":
     app = ModernRDDS_GUI()
