@@ -11,6 +11,8 @@ from rogue_ap_detector import RogueAPDetector
 from logger import SecurityLogger
 from deep_packet_inspector import DeepPacketInspector
 from enhanced_rogue_ap_detector import EnhancedRogueAPDetector
+from iot_profiler import IoTProfiler
+from dhcp_security import DHCPSecurityMonitor
 
 # ============================================
 # ADMINISTRATOR PRIVILEGES CHECK
@@ -72,18 +74,21 @@ class RogueDetectionSystem:
             # Use specified interface
             self.scanner = NetworkScanner(interface)
             
+        # Initialize components
         self.detector = RogueDetector()
         self.attack_detector = AttackDetector()
         self.ap_detector = RogueAPDetector()
         self.enhanced_ap_detector = EnhancedRogueAPDetector()
         self.dpi_inspector = DeepPacketInspector()
+        self.iot_profiler = IoTProfiler()
+        self.dhcp_monitor = DHCPSecurityMonitor()
         self.logger = SecurityLogger()
         
         print("""
 ╔══════════════════════════════════════════════════════════╗
-║   🛡️  ROGUE DEVICE DETECTION SYSTEM v2.0               ║
+║   🛡️  ROGUE DEVICE DETECTION SYSTEM v2.0                 ║
 ║   Enterprise Network Security Monitor                    ║
-║   Enhanced with Advanced Detection (No ML)              ║
+║   Enhanced with Advanced Detection                       ║
 ╚══════════════════════════════════════════════════════════╝
         """)
     
@@ -215,6 +220,99 @@ class RogueDetectionSystem:
         print(f"      ✓ Enhanced report saved: {report_file}")
         
         return analyzed_devices, alerts, wireless_networks, dpi_results if 'dpi_results' in locals() else []
+    
+    def run_iot_profiling(self):
+        """IoT Device Profiling & Risk Assessment"""
+        print("\n🔍 Starting IoT Device Profiling...")
+        print("="*50)
+        
+        # Get network devices
+        network_range = self.scanner.get_network_range()
+        devices = self.scanner.arp_scan(network_range)
+        
+        if not devices:
+            print("❌ No devices found for IoT profiling")
+            return []
+        
+        print(f"[*] Profiling {len(devices)} devices...")
+        
+        iot_profiles = []
+        for i, device in enumerate(devices):
+            print(f"  [{i+1}/{len(devices)}] Profiling {device['ip']}...")
+            
+            # Simulate device data for profiling
+            device_data = {
+                'ip': device['ip'],
+                'mac': device['mac'],
+                'open_ports': [80, 443, 8080],  # Simulated port scan
+                'ttl': 64,
+                'window_size': 8192,
+                'cloud_communication': ['cloud.iot-device.com'],
+                'firmware_version': '1.0.0'
+            }
+            
+            # Profile the device
+            profile = self.iot_profiler.profile_device(device_data)
+            iot_profiles.append(profile)
+            
+            # Display results
+            risk_level = "🔴 HIGH" if profile['risk_score'] >= 70 else "🟡 MEDIUM" if profile['risk_score'] >= 40 else "🟢 LOW"
+            print(f"    ✓ {profile['device_type']} - {profile['manufacturer']} - Risk: {profile['risk_score']}% {risk_level}")
+        
+        # Generate IoT security report
+        report = self.iot_profiler.generate_iot_report()
+        
+        print(f"\n📊 IoT Security Summary:")
+        print(f"  Total Devices: {report['total_devices']}")
+        print(f"  High Risk: {report['high_risk_devices']}")
+        print(f"  Medium Risk: {report['medium_risk_devices']}")
+        print(f"  Low Risk: {report['low_risk_devices']}")
+        print(f"  Total Vulnerabilities: {report['total_vulnerabilities']}")
+        
+        return iot_profiles
+    
+    def run_dhcp_security(self):
+        """DHCP Security Monitoring"""
+        print("\n🔒 Starting DHCP Security Monitoring...")
+        print("="*50)
+        
+        # Start DHCP monitoring
+        interface = self.scanner.interface
+        print(f"[*] Starting DHCP monitoring on {interface}...")
+        
+        if not self.dhcp_monitor.start_monitoring(interface):
+            print("❌ Failed to start DHCP monitoring")
+            return []
+        
+        print("✅ DHCP monitoring started")
+        print("[*] Monitoring for 60 seconds...")
+        
+        # Monitor for 60 seconds
+        time.sleep(60)
+        
+        # Get security summary
+        summary = self.dhcp_monitor.get_security_summary()
+        recent_alerts = self.dhcp_monitor.get_recent_alerts(10)
+        
+        print(f"\n📊 DHCP Security Summary:")
+        print(f"  DHCP Servers: {summary['dhcp_servers']}")
+        print(f"  Authorized Servers: {summary['authorized_servers']}")
+        print(f"  Active Leases: {summary['active_leases']}")
+        print(f"  Recent Requests: {summary['recent_requests']}")
+        print(f"  Recent Alerts: {summary['recent_alerts']}")
+        print(f"  High Risk Alerts: {summary['high_risk_alerts']}")
+        
+        if recent_alerts:
+            print(f"\n🚨 Recent DHCP Alerts:")
+            for alert in recent_alerts[:5]:
+                severity_emoji = "🔴" if alert['severity'] == 'HIGH' else "🟡"
+                print(f"  {severity_emoji} [{alert['severity']}] {alert['type']}: {alert['message']}")
+        
+        # Stop monitoring
+        self.dhcp_monitor.stop_monitoring()
+        print("\n✅ DHCP monitoring stopped")
+        
+        return recent_alerts
     
     def monitor_attacks(self, duration=60):
         """Real-time attack monitoring"""
@@ -485,14 +583,16 @@ class RogueDetectionSystem:
             print("="*60)
             print("1. Run Full Network Scan (Standard)")
             print("2. Run Enhanced Security Scan (NEW)")
-            print("3. Monitor for Attacks (Real-time)")
-            print("4. View Whitelist")
-            print("5. Add Device to Whitelist")
-            print("6. Edit Device in Whitelist")
-            print("7. Remove Device from Whitelist")
-            print("8. Generate Report")
-            print("9. Manual Update Instructions")
-            print("10. Exit")
+            print("3. IoT Device Profiling & Risk Assessment")
+            print("4. DHCP Security Monitoring")
+            print("5. Monitor for Attacks (Real-time)")
+            print("6. View Whitelist")
+            print("7. Add Device to Whitelist")
+            print("8. Edit Device in Whitelist")
+            print("9. Remove Device from Whitelist")
+            print("10. Generate Report")
+            print("11. Manual Update Instructions")
+            print("12. Exit")
             
             choice = input("\nSelect option (or 'back' to return): ").strip()
             
@@ -517,31 +617,37 @@ class RogueDetectionSystem:
                 self._last_dpi_results = dpi_results
                 
             elif choice == '3':
+                self.run_iot_profiling()
+                
+            elif choice == '4':
+                self.run_dhcp_security()
+                
+            elif choice == '5':
                 try:
                     duration = int(input("Monitor duration (seconds): "))
                     self.monitor_attacks(duration)
                 except ValueError:
                     print("❌ Please enter a valid number!")
                 
-            elif choice == '4':
+            elif choice == '6':
                 self.view_whitelist()
                 
-            elif choice == '5':
+            elif choice == '7':
                 self.add_device_to_whitelist()
                 
-            elif choice == '6':
+            elif choice == '8':
                 self.edit_device_from_whitelist()
                 
-            elif choice == '7':
+            elif choice == '9':
                 self.remove_device_from_whitelist()
                 
-            elif choice == '8':
+            elif choice == '10':
                 self.generate_report_interactive()
                 
-            elif choice == '9':
+            elif choice == '11':
                 self.show_manual_update_info()
                 
-            elif choice == '10':
+            elif choice == '12':
                 print("\n👋 Exiting...")
                 break
             else:

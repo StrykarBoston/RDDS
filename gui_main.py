@@ -15,6 +15,8 @@ from rogue_ap_detector import RogueAPDetector
 from logger import SecurityLogger
 from deep_packet_inspector import DeepPacketInspector
 from enhanced_rogue_ap_detector import EnhancedRogueAPDetector
+from iot_profiler import IoTProfiler
+from dhcp_security import DHCPSecurityMonitor
 from settings_config import SettingsManager, SettingsDialog
 from npcapy_check import check_npcap_installation, install_npcap_instructions
 
@@ -35,6 +37,8 @@ class ModernRDDS_GUI:
         self.ap_detector = RogueAPDetector()
         self.enhanced_ap_detector = EnhancedRogueAPDetector()
         self.dpi_inspector = DeepPacketInspector()
+        self.iot_profiler = IoTProfiler()
+        self.dhcp_monitor = DHCPSecurityMonitor()
         self.logger = SecurityLogger()
         self.settings_manager = SettingsManager()
         
@@ -369,6 +373,22 @@ class ModernRDDS_GUI:
         )
         enhanced_radio.pack(side='left', padx=5)
         
+        iot_radio = ttk.Radiobutton(
+            scan_type_frame,
+            text="IoT Profiling",
+            variable=self.scan_type,
+            value="iot"
+        )
+        iot_radio.pack(side='left', padx=5)
+        
+        dhcp_radio = ttk.Radiobutton(
+            scan_type_frame,
+            text="DHCP Security",
+            variable=self.scan_type,
+            value="dhcp"
+        )
+        dhcp_radio.pack(side='left', padx=5)
+        
         # Scan button
         self.scan_button = ttk.Button(
             control_frame,
@@ -657,14 +677,22 @@ class ModernRDDS_GUI:
         
         if scan_type == "enhanced":
             self.update_status("Starting enhanced security scan...")
+        elif scan_type == "iot":
+            self.update_status("Starting IoT device profiling...")
+        elif scan_type == "dhcp":
+            self.update_status("Starting DHCP security monitoring...")
         else:
             self.update_status("Starting network scan...")
         
         # Start scan in background
         if scan_type == "standard":
             self.current_scan_thread = threading.Thread(target=self._perform_scan, daemon=True)
-        else:
+        elif scan_type == "enhanced":
             self.current_scan_thread = threading.Thread(target=self._perform_enhanced_scan, daemon=True)
+        elif scan_type == "iot":
+            self.current_scan_thread = threading.Thread(target=self._perform_iot_scan, daemon=True)
+        elif scan_type == "dhcp":
+            self.current_scan_thread = threading.Thread(target=self._perform_dhcp_scan, daemon=True)
         self.current_scan_thread.start()
         
         # Check for results
@@ -796,6 +824,113 @@ class ModernRDDS_GUI:
             elif "No such device" in error_msg:
                 error_msg = "Network interface not available. Check your connection."
             self.scan_queue.put(("error", error_msg))
+    
+    def _perform_iot_scan(self):
+        """Perform IoT device profiling scan"""
+        try:
+            # Step 1: Network discovery
+            self.scan_queue.put(("progress", 10))
+            self.scan_queue.put(("status", "Discovering network devices..."))
+            network_range = self.scanner.get_network_range()
+            
+            self.scan_queue.put(("progress", 30))
+            devices = self.scanner.arp_scan(network_range)
+            self.scan_queue.put(("status", f"Found {len(devices)} devices"))
+            
+            if not devices:
+                self.scan_queue.put(("error", "No devices found for IoT profiling"))
+                return
+            
+            # Step 2: IoT Profiling
+            self.scan_queue.put(("progress", 40))
+            self.scan_queue.put(("status", "Profiling IoT devices..."))
+            
+            iot_profiles = []
+            for i, device in enumerate(devices):
+                self.scan_queue.put(("progress", 40 + (i * 50 // len(devices))))
+                self.scan_queue.put(("status", f"Profiling {device['ip']}..."))
+                
+                # Simulate device data for profiling
+                device_data = {
+                    'ip': device['ip'],
+                    'mac': device['mac'],
+                    'open_ports': [80, 443, 8080],
+                    'ttl': 64,
+                    'window_size': 8192,
+                    'cloud_communication': ['cloud.iot-device.com'],
+                    'firmware_version': '1.0.0'
+                }
+                
+                # Profile the device
+                profile = self.iot_profiler.profile_device(device_data)
+                iot_profiles.append(profile)
+            
+            # Step 3: Generate IoT report
+            self.scan_queue.put(("progress", 90))
+            self.scan_queue.put(("status", "Generating IoT security report..."))
+            
+            report = self.iot_profiler.generate_iot_report()
+            
+            # Send results
+            self.scan_queue.put(("progress", 100))
+            self.scan_queue.put(("iot_results", iot_profiles, report))
+            
+        except Exception as e:
+            error_msg = str(e)
+            if "Permission denied" in error_msg:
+                error_msg = "Insufficient privileges. Please run as Administrator."
+            elif "No such device" in error_msg:
+                error_msg = "Network interface not available. Check your connection."
+            self.scan_queue.put(("error", error_msg))
+    
+    def _perform_dhcp_scan(self):
+        """Perform DHCP security monitoring"""
+        try:
+            # Step 1: Start DHCP monitoring
+            self.scan_queue.put(("progress", 10))
+            self.scan_queue.put(("status", "Starting DHCP security monitoring..."))
+            
+            interface = self.scanner.interface
+            if not self.dhcp_monitor.start_monitoring(interface):
+                self.scan_queue.put(("error", "Failed to start DHCP monitoring"))
+                return
+            
+            self.scan_queue.put(("progress", 20))
+            self.scan_queue.put(("status", "DHCP monitoring active - analyzing traffic..."))
+            
+            # Monitor for 60 seconds with progress updates
+            import time
+            for i in range(60):
+                progress = 20 + (i * 60 // 60)  # 20% to 80%
+                self.scan_queue.put(("progress", progress))
+                self.scan_queue.put(("status", f"Monitoring DHCP traffic... {i+1}/60s"))
+                
+                time.sleep(1)
+            
+            # Step 2: Generate security summary
+            self.scan_queue.put(("progress", 85))
+            self.scan_queue.put(("status", "Analyzing DHCP security data..."))
+            
+            summary = self.dhcp_monitor.get_security_summary()
+            recent_alerts = self.dhcp_monitor.get_recent_alerts(10)
+            
+            # Step 3: Stop monitoring
+            self.scan_queue.put(("progress", 95))
+            self.scan_queue.put(("status", "Stopping DHCP monitoring..."))
+            
+            self.dhcp_monitor.stop_monitoring()
+            
+            # Send results
+            self.scan_queue.put(("progress", 100))
+            self.scan_queue.put(("dhcp_results", summary, recent_alerts))
+            
+        except Exception as e:
+            error_msg = str(e)
+            if "Permission denied" in error_msg:
+                error_msg = "Insufficient privileges. Please run as Administrator."
+            elif "No such device" in error_msg:
+                error_msg = "Network interface not available. Check your connection."
+            self.scan_queue.put(("error", error_msg))
             
     def check_scan_results(self):
         """Check for scan results with progress updates"""
@@ -821,7 +956,27 @@ class ModernRDDS_GUI:
                     self.scan_button.config(text="🚀 Start Scan", state='normal')
                     self.status_indicator.config(text="● Ready", fg=self.colors['success'])
                     self.update_status("Scan completed")
-                    self.add_activity("✅ Full scan completed successfully")
+                    self.add_activity("✅ Scan completed successfully")
+                    
+                elif result[0] == "iot_results":
+                    iot_profiles, report = result[1], result[2]
+                    self.display_iot_results(iot_profiles, report)
+                    self.scan_progress.stop()
+                    self.scan_progress['value'] = 100
+                    self.scan_button.config(text="🚀 Start Scan", state='normal')
+                    self.status_indicator.config(text="● Ready", fg=self.colors['success'])
+                    self.update_status("IoT profiling completed")
+                    self.add_activity("✅ IoT profiling completed successfully")
+                    
+                elif result[0] == "dhcp_results":
+                    summary, alerts = result[1], result[2]
+                    self.display_dhcp_results(summary, alerts)
+                    self.scan_progress.stop()
+                    self.scan_progress['value'] = 100
+                    self.scan_button.config(text="🚀 Start Scan", state='normal')
+                    self.status_indicator.config(text="● Ready", fg=self.colors['success'])
+                    self.update_status("DHCP security monitoring completed")
+                    self.add_activity("✅ DHCP security monitoring completed successfully")
                     
                 elif result[0] == "error":
                     messagebox.showerror("Scan Error", f"Scan failed: {result[1]}")
@@ -1450,6 +1605,101 @@ class ModernRDDS_GUI:
     def run(self):
         """Start the GUI application"""
         self.root.mainloop()
+    
+    def display_iot_results(self, iot_profiles, report):
+        """Display IoT profiling results"""
+        # Clear existing items
+        for item in self.scan_tree.get_children():
+            self.scan_tree.delete(item)
+        
+        # Add IoT profiles to tree
+        for profile in iot_profiles:
+            risk_level = "🔴 HIGH" if profile['risk_score'] >= 70 else "🟡 MEDIUM" if profile['risk_score'] >= 40 else "🟢 LOW"
+            
+            self.scan_tree.insert('', 'end', values=(
+                profile['ip'],
+                profile['mac'],
+                profile['device_type'],
+                profile['manufacturer'],
+                f"{profile['risk_score']}%",
+                risk_level,
+                f"{len(profile['vulnerabilities'])} CVEs"
+            ))
+        
+        # Update dashboard with IoT summary
+        self.update_dashboard_iot_stats(report)
+    
+    def display_dhcp_results(self, summary, alerts):
+        """Display DHCP security results"""
+        # Clear existing items
+        for item in self.scan_tree.get_children():
+            self.scan_tree.delete(item)
+        
+        # Add DHCP servers
+        if summary['dhcp_servers'] > 0:
+            self.scan_tree.insert('', 'end', values=(
+                "DHCP Servers",
+                f"{summary['dhcp_servers']} total",
+                f"{summary['authorized_servers']} authorized",
+                f"{summary['active_leases']} active leases",
+                f"{summary['recent_alerts']} alerts",
+                "🔒 DHCP Security",
+                f"{summary['high_risk_alerts']} high risk"
+            ))
+        
+        # Add recent alerts
+        for alert in alerts[:10]:
+            severity_emoji = "🔴" if alert['severity'] == 'HIGH' else "🟡"
+            self.scan_tree.insert('', 'end', values=(
+                alert.get('timestamp', 'Unknown'),
+                alert['type'],
+                alert.get('source_mac', 'N/A'),
+                alert.get('server_ip', 'N/A'),
+                f"{severity_emoji} {alert['severity']}",
+                alert['message'][:50] + '...' if len(alert['message']) > 50 else alert['message'],
+                "DHCP Alert"
+            ))
+        
+        # Update dashboard with DHCP summary
+        self.update_dashboard_dhcp_stats(summary)
+    
+    def update_dashboard_iot_stats(self, report):
+        """Update dashboard with IoT statistics"""
+        # Update device count
+        if hasattr(self, 'device_count_label'):
+            self.device_count_label.config(text=f"Devices: {report['total_devices']}")
+        
+        # Update alert count
+        if hasattr(self, 'alert_count_label'):
+            self.alert_count_label.config(text=f"IoT Risks: {report['high_risk_devices']}")
+        
+        # Update status
+        if hasattr(self, 'status_indicator'):
+            if report['high_risk_devices'] > 0:
+                self.status_indicator.config(text="● High Risk IoT", fg=self.colors['danger'])
+            elif report['medium_risk_devices'] > 0:
+                self.status_indicator.config(text="● Medium Risk IoT", fg=self.colors['warning'])
+            else:
+                self.status_indicator.config(text="● IoT Secure", fg=self.colors['success'])
+    
+    def update_dashboard_dhcp_stats(self, summary):
+        """Update dashboard with DHCP statistics"""
+        # Update device count
+        if hasattr(self, 'device_count_label'):
+            self.device_count_label.config(text=f"DHCP Servers: {summary['dhcp_servers']}")
+        
+        # Update alert count
+        if hasattr(self, 'alert_count_label'):
+            self.alert_count_label.config(text=f"DHCP Alerts: {summary['recent_alerts']}")
+        
+        # Update status
+        if hasattr(self, 'status_indicator'):
+            if summary['high_risk_alerts'] > 0:
+                self.status_indicator.config(text="● DHCP Threats", fg=self.colors['danger'])
+            elif summary['recent_alerts'] > 0:
+                self.status_indicator.config(text="● DHCP Alerts", fg=self.colors['warning'])
+            else:
+                self.status_indicator.config(text="● DHCP Secure", fg=self.colors['success'])
 
 if __name__ == "__main__":
     app = ModernRDDS_GUI()
