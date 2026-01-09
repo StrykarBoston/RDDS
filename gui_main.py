@@ -85,52 +85,168 @@ class ModernRDDS_GUI:
         self.check_npcap()
         
     def setup_styles(self):
-        """Setup modern ttk styles"""
+        """Setup modern ttk styles with dark theme"""
         style = ttk.Style()
         style.theme_use('clam')
         
-        # Configure colors
+        # Modern dark color scheme
         self.colors = {
-            'primary': '#2E86AB',
-            'secondary': '#A23B72',
-            'success': '#4CAF50',
-            'warning': '#FF9800',
-            'danger': '#F44336',
-            'dark': '#212121',
-            'light': '#F5F5F5',
-            'text': '#333333'
+            'primary': '#1E88E5',      # Modern blue
+            'secondary': '#7B1FA2',    # Modern purple
+            'success': '#43A047',      # Modern green
+            'warning': '#FB8C00',      # Modern orange
+            'danger': '#E53935',       # Modern red
+            'dark': '#1E1E1E',         # Dark background
+            'darker': '#121212',       # Even darker
+            'light': '#F5F5F5',        # Light text
+            'card': '#2D2D2D',         # Card background
+            'accent': '#00BCD4',       # Cyan accent
+            'text': '#FFFFFF',         # White text
+            'text_secondary': '#B0BEC5' # Secondary text
         }
         
+        # Configure root window with dark theme
+        self.root.configure(bg=self.colors['dark'])
+        
+        # Style configuration with error handling
+        def safe_configure_style(style_name, **options):
+            """Safely configure a style with fallback"""
+            try:
+                style.configure(style_name, **options)
+                return True
+            except Exception as e:
+                print(f"Warning: Could not configure style '{style_name}': {e}")
+                return False
+        
+        def safe_map_style(style_name, **options):
+            """Safely map style states with fallback"""
+            try:
+                style.map(style_name, **options)
+                return True
+            except Exception as e:
+                print(f"Warning: Could not map style '{style_name}': {e}")
+                return False
+        
+        # Modern button styles
+        safe_configure_style('Modern.TButton',
+                          background=self.colors['primary'],
+                          foreground=self.colors['text'],
+                          borderwidth=0,
+                          focuscolor='none',
+                          font=('Segoe UI', 10, 'bold'),
+                          relief='flat')
+        
+        safe_map_style('Modern.TButton',
+                     background=[('active', self.colors['secondary']),
+                               ('pressed', self.colors['secondary'])])
+        
+        # Success button style
+        safe_configure_style('Success.TButton',
+                          background=self.colors['success'],
+                          foreground=self.colors['text'],
+                          borderwidth=0,
+                          focuscolor='none',
+                          font=('Segoe UI', 10, 'bold'),
+                          relief='flat')
+        
+        # Danger button style
+        safe_configure_style('Danger.TButton',
+                          background=self.colors['danger'],
+                          foreground=self.colors['text'],
+                          borderwidth=0,
+                          focuscolor='none',
+                          font=('Segoe UI', 10, 'bold'),
+                          relief='flat')
+        
+        # Warning button style
+        safe_configure_style('Warning.TButton',
+                          background=self.colors['warning'],
+                          foreground=self.colors['text'],
+                          borderwidth=0,
+                          focuscolor='none',
+                          font=('Segoe UI', 10, 'bold'),
+                          relief='flat')
+        
+        # Modern frame styles (cards)
+        safe_configure_style('Card.TFrame',
+                          background=self.colors['card'],
+                          relief='flat',
+                          borderwidth=1)
+        
+        # Header frame style
+        safe_configure_style('Header.TFrame',
+                          background=self.colors['primary'],
+                          relief='flat',
+                          borderwidth=0)
+        
+        # Sidebar frame style
+        safe_configure_style('Sidebar.TFrame',
+                          background=self.colors['darker'],
+                          relief='flat',
+                          borderwidth=0)
+        
+        # Modern notebook style
+        safe_configure_style('Modern.TNotebook',
+                          background=self.colors['dark'],
+                          borderwidth=0,
+                          tabmargins=[0, 5, 0, 0])
+        
+        safe_configure_style('Modern.TNotebook.Tab',
+                          background=self.colors['card'],
+                          foreground=self.colors['text'],
+                          padding=[20, 10],
+                          font=('Segoe UI', 10, 'bold'))
+        
+        safe_map_style('Modern.TNotebook.Tab',
+                     background=[('selected', self.colors['primary']),
+                               ('active', self.colors['secondary'])])
+        
+        # Modern treeview style
+        safe_configure_style('Modern.Treeview',
+                          background=self.colors['card'],
+                          foreground=self.colors['text'],
+                          fieldbackground=self.colors['card'],
+                          borderwidth=0,
+                          font=('Segoe UI', 10))
+        
+        safe_configure_style('Modern.Treeview.Heading',
+                          background=self.colors['primary'],
+                          foreground=self.colors['text'],
+                          font=('Segoe UI', 10, 'bold'))
+        
+        # Modern progress bar
+        safe_configure_style('Modern.TProgressbar',
+                          background=self.colors['primary'],
+                          troughcolor=self.colors['darker'],
+                          borderwidth=0)
+        
+        # Modern scrollbar
+        safe_configure_style('Modern.Vertical.TScrollbar',
+                          background=self.colors['card'],
+                          troughcolor=self.colors['darker'],
+                          borderwidth=0)
+        
+        # Modern entry style
+        safe_configure_style('Modern.TEntry',
+                          fieldbackground=self.colors['card'],
+                          foreground=self.colors['text'],
+                          borderwidth=1,
+                          insertcolor=self.colors['text'],
+                          font=('Segoe UI', 10))
+        
+        # Modern radiobutton style
+        safe_configure_style('Modern.TRadiobutton',
+                          background=self.colors['card'],
+                          foreground=self.colors['text'],
+                          font=('Segoe UI', 10))
+        
         # Configure button styles
-        style.configure('Primary.TButton', 
-                       background=self.colors['primary'],
-                       foreground='white',
-                       borderwidth=0,
-                       focuscolor='none',
-                       font=('Segoe UI', 10, 'bold'))
-        
-        style.configure('Success.TButton',
-                       background=self.colors['success'],
-                       foreground='white',
-                       borderwidth=0,
-                       focuscolor='none',
-                       font=('Segoe UI', 10, 'bold'))
-        
-        style.configure('Danger.TButton',
-                       background=self.colors['danger'],
-                       foreground='white',
-                       borderwidth=0,
-                       focuscolor='none',
-                       font=('Segoe UI', 10, 'bold'))
-        
-        # Configure frame styles
-        style.configure('Card.TFrame',
-                       background='white',
-                       relief='flat',
-                       borderwidth=1)
-        
-        # Configure root window
-        self.root.configure(bg=self.colors['light'])
+        safe_configure_style('Primary.TButton', 
+                          background=self.colors['primary'],
+                          foreground='white',
+                          borderwidth=0,
+                          focuscolor='none',
+                          font=('Segoe UI', 10, 'bold'))
         
     def check_npcap(self):
         """Check Npcap installation"""
@@ -167,77 +283,228 @@ class ModernRDDS_GUI:
             pass
             
     def setup_gui(self):
-        """Setup main GUI layout"""
-        # Create main container
-        main_container = tk.Frame(self.root, bg=self.colors['light'])
-        main_container.pack(fill='both', expand=True, padx=10, pady=10)
+        """Setup modern GUI layout with sidebar"""
+        # Create main container with sidebar
+        main_container = tk.Frame(self.root, bg=self.colors['dark'])
+        main_container.pack(fill='both', expand=True)
+        
+        # Create sidebar
+        self.create_sidebar(main_container)
+        
+        # Create content area
+        content_container = tk.Frame(main_container, bg=self.colors['dark'])
+        content_container.pack(side='right', fill='both', expand=True)
         
         # Header
-        self.create_header(main_container)
+        self.create_header(content_container)
         
         # Content area with notebook
-        self.create_notebook(main_container)
+        self.create_notebook(content_container)
         
         # Status bar
-        self.create_status_bar(main_container)
+        self.create_status_bar(content_container)
+        
+    def create_sidebar(self, parent):
+        """Create modern sidebar navigation"""
+        self.sidebar = tk.Frame(parent, bg=self.colors['darker'], width=250)
+        self.sidebar.pack(side='left', fill='y')
+        self.sidebar.pack_propagate(False)
+        
+        # Logo/Title
+        logo_frame = tk.Frame(self.sidebar, bg=self.colors['darker'])
+        logo_frame.pack(fill='x', pady=20)
+        
+        logo_label = tk.Label(
+            logo_frame,
+            text="🛡️ RDDS",
+            font=('Segoe UI', 24, 'bold'),
+            bg=self.colors['darker'],
+            fg=self.colors['text']
+        )
+        logo_label.pack(pady=(0, 5))
+        
+        subtitle_label = tk.Label(
+            logo_frame,
+            text="Security Dashboard",
+            font=('Segoe UI', 12),
+            bg=self.colors['darker'],
+            fg=self.colors['text_secondary']
+        )
+        subtitle_label.pack()
+        
+        # Navigation buttons
+        self.nav_buttons = {}
+        nav_items = [
+            ("🏠 Dashboard", 0),
+            ("🔍 Network Scan", 1),
+            ("📱 Devices", 2),
+            ("🎯 Monitoring", 3),
+            ("📊 Reports", 4),
+            ("⚙️ Settings", 5)
+        ]
+        
+        for text, index in nav_items:
+            btn = tk.Button(
+                self.sidebar,
+                text=text,
+                font=('Segoe UI', 11),
+                bg=self.colors['darker'],
+                fg=self.colors['text_secondary'],
+                activebackground=self.colors['card'],
+                activeforeground=self.colors['text'],
+                relief='flat',
+                bd=0,
+                pady=12,
+                anchor='w',
+                command=lambda idx=index: self.switch_tab(idx)
+            )
+            btn.pack(fill='x', padx=15, pady=2)
+            self.nav_buttons[text] = btn
+        
+        # Set active button
+        self.nav_buttons["🏠 Dashboard"].configure(
+            bg=self.colors['primary'],
+            fg=self.colors['text']
+        )
+        
+        # User profile section at bottom
+        user_frame = tk.Frame(self.sidebar, bg=self.colors['card'])
+        user_frame.pack(side='bottom', fill='x', padx=15, pady=20)
+        
+        avatar_label = tk.Label(
+            user_frame,
+            text="👤",
+            font=('Segoe UI', 24),
+            bg=self.colors['card'],
+            fg=self.colors['text']
+        )
+        avatar_label.pack(side='left', padx=10, pady=10)
+        
+        user_label = tk.Label(
+            user_frame,
+            text="Security Admin",
+            font=('Segoe UI', 10, 'bold'),
+            bg=self.colors['card'],
+            fg=self.colors['text']
+        )
+        user_label.pack(side='left', padx=10, pady=10)
+        
+    def switch_tab(self, index):
+        """Switch between tabs"""
+        # Reset all nav buttons
+        for text, btn in self.nav_buttons.items():
+            btn.configure(
+                bg=self.colors['darker'],
+                fg=self.colors['text_secondary']
+            )
+        
+        # Set active button
+        active_btns = list(self.nav_buttons.values())
+        if 0 <= index < len(active_btns):
+            active_btns[index].configure(
+                bg=self.colors['primary'],
+                fg=self.colors['text']
+            )
+        
+        # Switch notebook tab
+        self.notebook.select(index)
         
     def create_header(self, parent):
-        """Create application header"""
-        header_frame = tk.Frame(parent, bg=self.colors['primary'], height=80)
+        """Create modern application header"""
+        header_frame = tk.Frame(parent, bg=self.colors['primary'], height=60)
         header_frame.pack(fill='x', pady=(0, 10))
         header_frame.pack_propagate(False)
         
-        # Title
-        title_label = tk.Label(
+        # Left side - Date/Time
+        datetime_label = tk.Label(
             header_frame,
-            text="🛡️ Rogue Detection & Defense System",
-            font=('Segoe UI', 20, 'bold'),
+            text="",
+            font=('Segoe UI', 12),
             bg=self.colors['primary'],
-            fg='white'
+            fg=self.colors['text']
         )
-        title_label.pack(side='left', padx=20, pady=20)
+        datetime_label.pack(side='left', padx=20, pady=15)
+        self.datetime_label = datetime_label
+        
+        # Center - Search bar
+        search_frame = tk.Frame(header_frame, bg=self.colors['primary'])
+        search_frame.pack(side='left', expand=True, fill='x', padx=20, pady=15)
+        
+        search_entry = tk.Entry(
+            search_frame,
+            font=('Segoe UI', 11),
+            bg=self.colors['card'],
+            fg=self.colors['text'],
+            insertbackground=self.colors['text'],
+            relief='flat',
+            bd=0
+        )
+        search_entry.pack(fill='x', ipady=8)
+        search_entry.insert(0, "🔍 Search for events, patients etc...")
+        search_entry.bind('<FocusIn>', lambda e: search_entry.delete(0, 'end') if search_entry.get() == "🔍 Search for events, patients etc..." else None)
+        search_entry.bind('<FocusOut>', lambda e: search_entry.insert(0, "🔍 Search for events, patients etc...") if not search_entry.get() else None)
+        
+        # Right side - Status and icons
+        right_frame = tk.Frame(header_frame, bg=self.colors['primary'])
+        right_frame.pack(side='right', padx=20, pady=15)
         
         # Status indicator
         self.status_indicator = tk.Label(
-            header_frame,
-            text="● Ready",
-            font=('Segoe UI', 12),
+            right_frame,
+            text="● System Ready",
+            font=('Segoe UI', 12, 'bold'),
             bg=self.colors['primary'],
             fg=self.colors['success']
         )
-        self.status_indicator.pack(side='right', padx=20, pady=20)
+        self.status_indicator.pack(side='right', padx=10)
         
-        # Manual Update button (replaces automatic update)
-        update_button = tk.Button(
-            header_frame,
-            text="📦",
+        # Icon buttons
+        notification_btn = tk.Button(
+            right_frame,
+            text="🔔",
             font=('Segoe UI', 16),
             bg=self.colors['primary'],
-            fg='white',
-            bd=0,
+            fg=self.colors['text'],
             relief='flat',
-            command=self.show_manual_update_instructions,
-            cursor='hand2'
+            bd=0,
+            activebackground=self.colors['secondary']
         )
-        update_button.pack(side='right', padx=(0, 10), pady=20)
+        notification_btn.pack(side='right', padx=5)
         
-        # Settings button
-        settings_button = tk.Button(
-            header_frame,
-            text="⚙️",
+        message_btn = tk.Button(
+            right_frame,
+            text="💬",
             font=('Segoe UI', 16),
             bg=self.colors['primary'],
-            fg='white',
-            bd=0,
+            fg=self.colors['text'],
             relief='flat',
-            command=self.open_settings,
-            cursor='hand2'
+            bd=0,
+            activebackground=self.colors['secondary']
         )
-        settings_button.pack(side='right', padx=(0, 20), pady=20)
+        message_btn.pack(side='right', padx=5)
+        
+        user_btn = tk.Button(
+            right_frame,
+            text="👤",
+            font=('Segoe UI', 16),
+            bg=self.colors['primary'],
+            fg=self.colors['text'],
+            relief='flat',
+            bd=0,
+            activebackground=self.colors['secondary']
+        )
+        user_btn.pack(side='right', padx=5)
+        
+        # Update datetime
+        self.update_datetime()
         
     def create_notebook(self, parent):
-        """Create main notebook with tabs"""
-        self.notebook = ttk.Notebook(parent)
+        """Create main notebook with modern tabs"""
+        try:
+            self.notebook = ttk.Notebook(parent, style='Modern.TNotebook')
+        except:
+            # Fallback to default style if custom style fails
+            self.notebook = ttk.Notebook(parent)
         self.notebook.pack(fill='both', expand=True)
         
         # Dashboard tab
@@ -256,60 +523,269 @@ class ModernRDDS_GUI:
         self.create_reports_tab()
         
     def create_dashboard_tab(self):
-        """Create dashboard tab"""
-        dashboard_frame = ttk.Frame(self.notebook)
+        """Create modern dashboard tab"""
+        try:
+            dashboard_frame = ttk.Frame(self.notebook, style='Card.TFrame')
+        except:
+            dashboard_frame = ttk.Frame(self.notebook)
         self.notebook.add(dashboard_frame, text="📊 Dashboard")
         
-        # Main dashboard container
-        main_frame = tk.Frame(dashboard_frame, bg=self.colors['light'])
-        main_frame.pack(fill='both', expand=True, padx=10, pady=10)
+        # Main dashboard container with modern layout
+        main_frame = tk.Frame(dashboard_frame, bg=self.colors['dark'])
+        main_frame.pack(fill='both', expand=True, padx=20, pady=20)
         
-        # Stats cards
-        self.create_stats_cards(main_frame)
+        # Welcome banner
+        self.create_welcome_banner(main_frame)
         
-        # Alert status bar
-        self.create_alert_status_bar(main_frame)
+        # Modern stats cards
+        self.create_modern_stats_cards(main_frame)
         
-        # Recent activity
-        self.create_activity_panel(main_frame)
+        # Activity and alerts section
+        self.create_modern_activity_section(main_frame)
         
-    def create_stats_cards(self, parent):
-        """Create statistics cards"""
-        cards_frame = tk.Frame(parent, bg=self.colors['light'])
-        cards_frame.pack(fill='x', pady=(0, 20))
+    def create_welcome_banner(self, parent):
+        """Create modern welcome banner"""
+        banner_frame = tk.Frame(parent, bg=self.colors['primary'], height=120)
+        banner_frame.pack(fill='x', pady=(0, 20))
+        banner_frame.pack_propagate(False)
         
-        # Card definitions
+        # Left side - Welcome text
+        welcome_left = tk.Frame(banner_frame, bg=self.colors['primary'])
+        welcome_left.pack(side='left', fill='both', expand=True, padx=20, pady=20)
+        
+        welcome_title = tk.Label(
+            welcome_left,
+            text="Good Day, Security Admin!",
+            font=('Segoe UI', 24, 'bold'),
+            bg=self.colors['primary'],
+            fg=self.colors['text']
+        )
+        welcome_title.pack(anchor='w')
+        
+        welcome_subtitle = tk.Label(
+            welcome_left,
+            text="Your network is protected and monitored",
+            font=('Segoe UI', 12),
+            bg=self.colors['primary'],
+            fg=self.colors['text_secondary']
+        )
+        welcome_subtitle.pack(anchor='w', pady=(5, 0))
+        
+        # Right side - Status info
+        welcome_right = tk.Frame(banner_frame, bg=self.colors['primary'])
+        welcome_right.pack(side='right', padx=20, pady=20)
+        
+        self.system_status = tk.Label(
+            welcome_right,
+            text="🟢 All Systems Operational",
+            font=('Segoe UI', 16, 'bold'),
+            bg=self.colors['primary'],
+            fg=self.colors['success']
+        )
+        self.system_status.pack(anchor='e')
+        
+    def create_modern_stats_cards(self, parent):
+        """Create modern statistics cards"""
+        cards_container = tk.Frame(parent, bg=self.colors['dark'])
+        cards_container.pack(fill='x', pady=(0, 20))
+        
+        # Card definitions with modern styling
         cards = [
             ("🔍 Total Devices", "0", self.colors['primary']),
-            ("🚨 Rogue Devices", "0", self.colors['danger']),
-            ("⚠️ Suspicious", "0", self.colors['warning']),
-            ("✅ Trusted", "0", self.colors['success'])
+            ("🚨 Threats Detected", "0", self.colors['danger']),
+            ("✅ Secure Devices", "0", self.colors['success']),
+            ("⚠️ Suspicious Activity", "0", self.colors['warning'])
         ]
         
         self.stats_labels = {}
         
         for i, (title, value, color) in enumerate(cards):
-            card = tk.Frame(cards_frame, bg='white', relief='raised', bd=1)
-            card.pack(side='left', fill='both', expand=True, padx=(0, 10))
+            # Modern card frame
+            card = tk.Frame(cards_container, bg=self.colors['card'], relief='flat', bd=0)
+            card.pack(side='left', fill='both', expand=True, padx=(0, 15))
             
-            # Title
-            title_label = tk.Label(
-                card, text=title,
-                font=('Segoe UI', 12),
-                bg='white', fg=self.colors['text']
+            # Card content with padding
+            content_frame = tk.Frame(card, bg=self.colors['card'])
+            content_frame.pack(fill='both', expand=True, padx=20, pady=20)
+            
+            # Icon and title
+            header_frame = tk.Frame(content_frame, bg=self.colors['card'])
+            header_frame.pack(fill='x', pady=(0, 10))
+            
+            icon_label = tk.Label(
+                header_frame, 
+                text=title.split()[0], 
+                font=('Segoe UI', 20),
+                bg=self.colors['card'], 
+                fg=color
             )
-            title_label.pack(pady=(10, 5))
+            icon_label.pack(side='left', padx=(0, 10))
+            
+            title_label = tk.Label(
+                header_frame,
+                text=' '.join(title.split()[1:]),
+                font=('Segoe UI', 11),
+                bg=self.colors['card'], 
+                fg=self.colors['text_secondary']
+            )
+            title_label.pack(side='left')
             
             # Value
             value_label = tk.Label(
-                card, text=value,
-                font=('Segoe UI', 24, 'bold'),
-                bg='white', fg=color
+                content_frame, 
+                text=value, 
+                font=('Segoe UI', 28, 'bold'),
+                bg=self.colors['card'], 
+                fg=color
             )
-            value_label.pack(pady=(0, 10))
+            value_label.pack(anchor='w')
             
             # Store reference for updates
             self.stats_labels[title] = value_label
+        
+    def create_modern_activity_section(self, parent):
+        """Create modern activity and alerts section"""
+        # Create two-column layout
+        activity_container = tk.Frame(parent, bg=self.colors['dark'])
+        activity_container.pack(fill='both', expand=True)
+        
+        # Left column - Recent alerts
+        alerts_frame = tk.Frame(activity_container, bg=self.colors['card'], relief='flat', bd=0)
+        alerts_frame.pack(side='left', fill='both', expand=True, padx=(0, 10))
+        
+        # Alerts header
+        alerts_header = tk.Frame(alerts_frame, bg=self.colors['card'])
+        alerts_header.pack(fill='x', padx=20, pady=(20, 10))
+        
+        alerts_title = tk.Label(
+            alerts_header,
+            text="🚨 Recent Security Alerts",
+            font=('Segoe UI', 16, 'bold'),
+            bg=self.colors['card'],
+            fg=self.colors['text']
+        )
+        alerts_title.pack(side='left')
+        
+        # Alert status
+        self.alert_status_label = tk.Label(
+            alerts_frame,
+            text="🟢 No Active Alerts",
+            font=('Segoe UI', 12, 'bold'),
+            bg=self.colors['card'],
+            fg=self.colors['success']
+        )
+        self.alert_status_label.pack(padx=20, pady=(0, 10), anchor='w')
+        
+        # Activity text area
+        self.activity_text = scrolledtext.ScrolledText(
+            alerts_frame,
+            height=15,
+            font=('Consolas', 9),
+            bg=self.colors['dark'],
+            fg=self.colors['text'],
+            wrap='word',
+            relief='flat',
+            bd=0
+        )
+        self.activity_text.pack(fill='both', expand=True, padx=20, pady=(0, 20))
+        self.activity_text.config(state='disabled')
+        
+        # Right column - Quick actions
+        actions_frame = tk.Frame(activity_container, bg=self.colors['card'], relief='flat', bd=0, width=300)
+        actions_frame.pack(side='right', fill='y', padx=(10, 0))
+        actions_frame.pack_propagate(False)
+        
+        # Actions header
+        actions_header = tk.Frame(actions_frame, bg=self.colors['card'])
+        actions_header.pack(fill='x', padx=20, pady=(20, 10))
+        
+        actions_title = tk.Label(
+            actions_header,
+            text="⚡ Quick Actions",
+            font=('Segoe UI', 16, 'bold'),
+            bg=self.colors['card'],
+            fg=self.colors['text']
+        )
+        actions_title.pack()
+        
+        # Quick action buttons
+        actions = [
+            ("🚀 Start Scan", self.start_scan, self.colors['primary']),
+            ("🎯 Start Monitoring", self.toggle_monitoring, self.colors['success']),
+            ("📊 Generate Report", self.generate_report, self.colors['warning']),
+            ("⚙️ Settings", self.open_settings, self.colors['secondary'])
+        ]
+        
+        for text, command, color in actions:
+            btn = tk.Button(
+                actions_frame,
+                text=text,
+                font=('Segoe UI', 11, 'bold'),
+                bg=color,
+                fg=self.colors['text'],
+                relief='flat',
+                bd=0,
+                pady=12,
+                command=command,
+                activebackground=self.adjust_color(color, -20)
+            )
+            btn.pack(fill='x', padx=20, pady=5)
+            
+        # System info section
+        info_frame = tk.Frame(actions_frame, bg=self.colors['dark'], relief='flat', bd=0)
+        info_frame.pack(fill='x', padx=20, pady=20)
+        
+        info_title = tk.Label(
+            info_frame,
+            text="📊 System Info",
+            font=('Segoe UI', 12, 'bold'),
+            bg=self.colors['dark'],
+            fg=self.colors['text']
+        )
+        info_title.pack(pady=(10, 5))
+        
+        info_items = [
+            ("Protection Level", "🛡️ 100%"),
+            ("Uptime", "⏱️ 24h"),
+            ("Last Scan", "✅ Completed"),
+            ("Threat Level", "🟢 Low")
+        ]
+        
+        for label, value in info_items:
+            item_frame = tk.Frame(info_frame, bg=self.colors['dark'])
+            item_frame.pack(fill='x', padx=10, pady=2)
+            
+            label_widget = tk.Label(
+                item_frame,
+                text=label,
+                font=('Segoe UI', 10),
+                bg=self.colors['dark'],
+                fg=self.colors['text_secondary']
+            )
+            label_widget.pack(side='left')
+            
+            value_widget = tk.Label(
+                item_frame,
+                text=value,
+                font=('Segoe UI', 10, 'bold'),
+                bg=self.colors['dark'],
+                fg=self.colors['text']
+            )
+            value_widget.pack(side='right')
+            
+    def adjust_color(self, hex_color, amount):
+        """Adjust a hex color by amount (positive = lighter, negative = darker)"""
+        # Convert hex to RGB
+        hex_color = hex_color.lstrip('#')
+        r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+        
+        # Adjust
+        r = max(0, min(255, r + amount))
+        g = max(0, min(255, g + amount))
+        b = max(0, min(255, b + amount))
+        
+        # Convert back to hex
+        return f'#{r:02x}{g:02x}{b:02x}'
             
     def create_alert_status_bar(self, parent):
         """Create alert status bar for dashboard"""
@@ -358,130 +834,166 @@ class ModernRDDS_GUI:
         self.activity_text.config(state='disabled')
         
     def create_scan_tab(self):
-        """Create network scan tab"""
-        scan_frame = ttk.Frame(self.notebook)
+        """Create modern network scan tab"""
+        try:
+            scan_frame = ttk.Frame(self.notebook, style='Card.TFrame')
+        except:
+            scan_frame = ttk.Frame(self.notebook)
         self.notebook.add(scan_frame, text="🔍 Network Scan")
         
-        main_frame = tk.Frame(scan_frame, bg=self.colors['light'])
-        main_frame.pack(fill='both', expand=True, padx=10, pady=10)
+        main_frame = tk.Frame(scan_frame, bg=self.colors['dark'])
+        main_frame.pack(fill='both', expand=True, padx=20, pady=20)
         
-        # Control panel
-        control_frame = tk.Frame(main_frame, bg='white', relief='raised', bd=1)
-        control_frame.pack(fill='x', pady=(0, 10))
+        # Modern control panel
+        control_frame = tk.Frame(main_frame, bg=self.colors['card'], relief='flat', bd=0)
+        control_frame.pack(fill='x', pady=(0, 20))
+        
+        # Control header
+        control_header = tk.Frame(control_frame, bg=self.colors['card'])
+        control_header.pack(fill='x', padx=20, pady=(20, 10))
+        
+        control_title = tk.Label(
+            control_header,
+            text="🔍 Scan Configuration",
+            font=('Segoe UI', 16, 'bold'),
+            bg=self.colors['card'],
+            fg=self.colors['text']
+        )
+        control_title.pack(side='left')
         
         # Scan type selection
-        scan_type_frame = tk.Frame(control_frame, bg='white')
-        scan_type_frame.pack(fill='x', padx=10, pady=5)
+        scan_type_frame = tk.Frame(control_frame, bg=self.colors['card'])
+        scan_type_frame.pack(fill='x', padx=20, pady=10)
         
         tk.Label(
             scan_type_frame,
-            text="Scan Type:",
-            font=('Segoe UI', 10),
-            bg='white', fg=self.colors['text']
-        ).pack(side='left', padx=(0, 10))
+            text="Select Scan Type:",
+            font=('Segoe UI', 12, 'bold'),
+            bg=self.colors['card'], fg=self.colors['text']
+        ).pack(anchor='w', pady=(0, 10))
         
         self.scan_type = tk.StringVar(value="standard")
         
-        standard_radio = ttk.Radiobutton(
-            scan_type_frame,
-            text="Standard Scan (4-step)",
-            variable=self.scan_type,
-            value="standard"
-        )
-        standard_radio.pack(side='left', padx=5)
+        # Modern radio button layout
+        scan_types = [
+            ("Standard Scan (4-step)", "standard"),
+            ("Enhanced Scan (5-step)", "enhanced"),
+            ("IoT Profiling", "iot"),
+            ("DHCP Security", "dhcp"),
+            ("Traffic Analysis", "traffic"),
+            ("SSL Certificate Monitor", "ssl"),
+            ("Advanced Attack Detection", "advanced")
+        ]
         
-        enhanced_radio = ttk.Radiobutton(
-            scan_type_frame,
-            text="Enhanced Scan (5-step) - NEW",
-            variable=self.scan_type,
-            value="enhanced"
-        )
-        enhanced_radio.pack(side='left', padx=5)
-        
-        iot_radio = ttk.Radiobutton(
-            scan_type_frame,
-            text="IoT Profiling",
-            variable=self.scan_type,
-            value="iot"
-        )
-        iot_radio.pack(side='left', padx=5)
-        
-        dhcp_radio = ttk.Radiobutton(
-            scan_type_frame,
-            text="DHCP Security",
-            variable=self.scan_type,
-            value="dhcp"
-        )
-        dhcp_radio.pack(side='left', padx=5)
-        
-        traffic_radio = ttk.Radiobutton(
-            scan_type_frame,
-            text="Traffic Analysis",
-            variable=self.scan_type,
-            value="traffic"
-        )
-        traffic_radio.pack(side='left', padx=5)
-        
-        ssl_radio = ttk.Radiobutton(
-            scan_type_frame,
-            text="SSL Certificate Monitor",
-            variable=self.scan_type,
-            value="ssl"
-        )
-        ssl_radio.pack(side='left', padx=5)
-        
-        advanced_radio = ttk.Radiobutton(
-            scan_type_frame,
-            text="Advanced Attack Detection",
-            variable=self.scan_type,
-            value="advanced"
-        )
-        advanced_radio.pack(side='left', padx=5)
+        for i, (text, value) in enumerate(scan_types):
+            radio_frame = tk.Frame(scan_type_frame, bg=self.colors['card'])
+            radio_frame.pack(fill='x', pady=2)
+            
+            radio = tk.Radiobutton(
+                radio_frame,
+                text=text,
+                variable=self.scan_type,
+                value=value,
+                font=('Segoe UI', 11),
+                bg=self.colors['card'],
+                fg=self.colors['text'],
+                selectcolor=self.colors['primary'],
+                activebackground=self.colors['card'],
+                activeforeground=self.colors['text']
+            )
+            radio.pack(anchor='w')
         
         # Scan button
-        self.scan_button = ttk.Button(
+        self.scan_button = tk.Button(
             control_frame,
             text="🚀 Start Scan",
+            font=('Segoe UI', 14, 'bold'),
+            bg=self.colors['primary'],
+            fg=self.colors['text'],
+            relief='flat',
+            bd=0,
+            pady=15,
             command=self.start_scan,
-            style='Primary.TButton'
+            activebackground=self.adjust_color(self.colors['primary'], -20)
         )
-        self.scan_button.pack(pady=10)
+        self.scan_button.pack(pady=20, padx=20, fill='x')
         
         # Progress bar
-        self.scan_progress = ttk.Progressbar(
-            control_frame,
-            mode='determinate',
-            maximum=100
-        )
-        self.scan_progress.pack(fill='x', padx=10, pady=(0, 10))
+        try:
+            self.scan_progress = ttk.Progressbar(
+                control_frame,
+                mode='determinate',
+                maximum=100,
+                style='Modern.TProgressbar'
+            )
+        except:
+            # Fallback to default style if custom style fails
+            self.scan_progress = ttk.Progressbar(
+                control_frame,
+                mode='determinate',
+                maximum=100
+            )
+        self.scan_progress.pack(fill='x', padx=20, pady=(0, 20))
         
         # Results area
-        results_frame = tk.Frame(main_frame, bg='white', relief='raised', bd=1)
+        results_frame = tk.Frame(main_frame, bg=self.colors['card'], relief='flat', bd=0)
         results_frame.pack(fill='both', expand=True)
         
-        # Results title
-        title_label = tk.Label(
-            results_frame,
-            text="🔍 Scan Results",
-            font=('Segoe UI', 14, 'bold'),
-            bg='white', fg=self.colors['text']
-        )
-        title_label.pack(pady=10, padx=10, anchor='w')
+        # Results header
+        results_header = tk.Frame(results_frame, bg=self.colors['card'])
+        results_header.pack(fill='x', padx=20, pady=(20, 10))
         
-        # Results treeview
+        results_title = tk.Label(
+            results_header,
+            text="📋 Scan Results",
+            font=('Segoe UI', 16, 'bold'),
+            bg=self.colors['card'],
+            fg=self.colors['text']
+        )
+        results_title.pack(side='left')
+        
+        # Results treeview with modern styling
         columns = ('IP', 'MAC', 'Vendor', 'Status', 'Risk Score')
-        self.scan_tree = ttk.Treeview(results_frame, columns=columns, show='headings', height=15)
+        try:
+            self.scan_tree = ttk.Treeview(
+                results_frame, 
+                columns=columns, 
+                show='headings', 
+                height=15,
+                style='Modern.Treeview'
+            )
+        except:
+            # Fallback to default style if custom style fails
+            self.scan_tree = ttk.Treeview(
+                results_frame, 
+                columns=columns, 
+                show='headings', 
+                height=15
+            )
         
         for col in columns:
             self.scan_tree.heading(col, text=col)
             self.scan_tree.column(col, width=150)
         
-        # Scrollbar
-        scrollbar = ttk.Scrollbar(results_frame, orient='vertical', command=self.scan_tree.yview)
+        # Modern scrollbar
+        try:
+            scrollbar = ttk.Scrollbar(
+                results_frame, 
+                orient='vertical', 
+                command=self.scan_tree.yview,
+                style='Modern.Vertical.TScrollbar'
+            )
+        except:
+            # Fallback to default style if custom style fails
+            scrollbar = ttk.Scrollbar(
+                results_frame, 
+                orient='vertical', 
+                command=self.scan_tree.yview
+            )
         self.scan_tree.configure(yscrollcommand=scrollbar.set)
         
-        self.scan_tree.pack(side='left', fill='both', expand=True, padx=(10, 0), pady=(0, 10))
-        scrollbar.pack(side='right', fill='y', padx=(0, 10), pady=(0, 10))
+        self.scan_tree.pack(side='left', fill='both', expand=True, padx=(20, 0), pady=(0, 20))
+        scrollbar.pack(side='right', fill='y', padx=(0, 20), pady=(0, 20))
         
     def create_device_tab(self):
         """Create device management tab"""
@@ -673,9 +1185,15 @@ class ModernRDDS_GUI:
         )
         self.report_text.pack(fill='both', expand=True, padx=10, pady=(0, 10))
         
+    def update_datetime(self):
+        """Update date and time display"""
+        current_time = datetime.now().strftime("%A %B %d, %Y %H:%M:%S")
+        self.datetime_label.config(text=current_time)
+        self.root.after(1000, self.update_datetime)
+        
     def create_status_bar(self, parent):
-        """Create status bar"""
-        status_frame = tk.Frame(parent, bg=self.colors['dark'], height=30)
+        """Create modern status bar"""
+        status_frame = tk.Frame(parent, bg=self.colors['darker'], height=30)
         status_frame.pack(fill='x', side='bottom')
         status_frame.pack_propagate(False)
         
@@ -684,29 +1202,20 @@ class ModernRDDS_GUI:
             status_frame,
             text="Ready",
             font=('Segoe UI', 9),
-            bg=self.colors['dark'],
-            fg='white'
+            bg=self.colors['darker'],
+            fg=self.colors['text_secondary']
         )
         self.status_label.pack(side='left', padx=10, pady=5)
         
-        # Time label
-        self.time_label = tk.Label(
+        # Version info
+        version_label = tk.Label(
             status_frame,
-            text="",
+            text="RDDS v2.0 (Enhanced)",
             font=('Segoe UI', 9),
-            bg=self.colors['dark'],
-            fg='white'
+            bg=self.colors['darker'],
+            fg=self.colors['text_secondary']
         )
-        self.time_label.pack(side='right', padx=10, pady=5)
-        
-        # Update time
-        self.update_time()
-        
-    def update_time(self):
-        """Update time display"""
-        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        self.time_label.config(text=current_time)
-        self.root.after(1000, self.update_time)
+        version_label.pack(side='right', padx=10, pady=5)
         
     def start_scan(self):
         """Start network scan (standard or enhanced)"""
