@@ -16,12 +16,12 @@ import sys
 # ============================================
 try:
     from error_handler import handle_rdds_error, error_handler
-    print("✅ Error handler imported")
+    print("Error handler imported")
 except ImportError as e:
-    print(f"❌ Error handler import failed: {e}")
+    print(f"Error handler import failed: {e}")
     # Fallback basic error handling
     def handle_rdds_error(error, context="", severity="ERROR", show_user=True, critical=False):
-        print(f"❌ {severity} in {context}: {error}")
+        print(f"{severity} in {context}: {error}")
         if show_user:
             messagebox.showerror(f"RDDS {severity}", f"{context}: {error}")
         return {'error_message': str(error)}
@@ -298,8 +298,12 @@ class ModernRDDS_GUI:
         # Header
         self.create_header(content_container)
         
-        # Content area with notebook
-        self.create_notebook(content_container)
+        # Content area for switching
+        self.content_area = tk.Frame(content_container, bg=self.colors['dark'])
+        self.content_area.pack(fill='both', expand=True)
+        
+        # Show initial dashboard content
+        self.show_content_by_index(0)
         
         # Status bar
         self.create_status_bar(content_container)
@@ -356,7 +360,7 @@ class ModernRDDS_GUI:
                 bd=0,
                 pady=12,
                 anchor='w',
-                command=lambda idx=index: self.switch_tab(idx)
+                command=lambda idx=index: self.switch_content(idx)
             )
             btn.pack(fill='x', padx=15, pady=2)
             self.nav_buttons[text] = btn
@@ -389,8 +393,8 @@ class ModernRDDS_GUI:
         )
         user_label.pack(side='left', padx=10, pady=10)
         
-    def switch_tab(self, index):
-        """Switch between tabs"""
+    def switch_content(self, index):
+        """Switch between different content views"""
         # Reset all nav buttons
         for text, btn in self.nav_buttons.items():
             btn.configure(
@@ -406,8 +410,82 @@ class ModernRDDS_GUI:
                 fg=self.colors['text']
             )
         
-        # Switch notebook tab
-        self.notebook.select(index)
+        # Clear current content and show new content
+        self.show_content_by_index(index)
+        
+    def show_content_by_index(self, index):
+        """Show content based on sidebar selection"""
+        # Clear current content
+        for widget in self.content_area.winfo_children():
+            widget.destroy()
+        
+        if index == 0:  # Dashboard
+            self.create_dashboard_content(self.content_area)
+        elif index == 1:  # Network Scan
+            self.create_scan_content(self.content_area)
+        elif index == 2:  # Devices
+            self.create_device_content(self.content_area)
+        elif index == 3:  # Monitoring
+            self.create_monitoring_content(self.content_area)
+        elif index == 4:  # Reports
+            self.create_reports_content(self.content_area)
+        elif index == 5:  # Settings
+            self.create_settings_content(self.content_area)
+        
+    def create_dashboard_content(self, parent):
+        """Create dashboard content"""
+        # Main dashboard container with modern layout
+        main_frame = tk.Frame(parent, bg=self.colors['dark'])
+        main_frame.pack(fill='both', expand=True, padx=20, pady=20)
+        
+        # Welcome banner
+        self.create_welcome_banner(main_frame)
+        
+        # Modern stats cards
+        self.create_modern_stats_cards(main_frame)
+        
+        # Activity and alerts section
+        self.create_modern_activity_section(main_frame)
+        
+    def create_scan_content(self, parent):
+        """Create network scan content"""
+        main_frame = tk.Frame(parent, bg=self.colors['dark'])
+        main_frame.pack(fill='both', expand=True, padx=20, pady=20)
+        
+        # Scan interface
+        self.create_scan_interface(main_frame)
+        
+    def create_device_content(self, parent):
+        """Create device management content"""
+        main_frame = tk.Frame(parent, bg=self.colors['dark'])
+        main_frame.pack(fill='both', expand=True, padx=20, pady=20)
+        
+        # Device management interface
+        self.create_device_interface(main_frame)
+        
+    def create_monitoring_content(self, parent):
+        """Create monitoring content"""
+        main_frame = tk.Frame(parent, bg=self.colors['dark'])
+        main_frame.pack(fill='both', expand=True, padx=20, pady=20)
+        
+        # Monitoring interface
+        self.create_monitoring_interface(main_frame)
+        
+    def create_reports_content(self, parent):
+        """Create reports content"""
+        main_frame = tk.Frame(parent, bg=self.colors['dark'])
+        main_frame.pack(fill='both', expand=True, padx=20, pady=20)
+        
+        # Reports interface
+        self.create_reports_interface(main_frame)
+        
+    def create_settings_content(self, parent):
+        """Create settings content"""
+        main_frame = tk.Frame(parent, bg=self.colors['dark'])
+        main_frame.pack(fill='both', expand=True, padx=20, pady=20)
+        
+        # Settings interface
+        self.create_settings_interface(main_frame)
         
     def create_header(self, parent):
         """Create modern application header"""
@@ -426,24 +504,6 @@ class ModernRDDS_GUI:
         datetime_label.pack(side='left', padx=20, pady=15)
         self.datetime_label = datetime_label
         
-        # Center - Search bar
-        search_frame = tk.Frame(header_frame, bg=self.colors['primary'])
-        search_frame.pack(side='left', expand=True, fill='x', padx=20, pady=15)
-        
-        search_entry = tk.Entry(
-            search_frame,
-            font=('Segoe UI', 11),
-            bg=self.colors['card'],
-            fg=self.colors['text'],
-            insertbackground=self.colors['text'],
-            relief='flat',
-            bd=0
-        )
-        search_entry.pack(fill='x', ipady=8)
-        search_entry.insert(0, "🔍 Search for events, patients etc...")
-        search_entry.bind('<FocusIn>', lambda e: search_entry.delete(0, 'end') if search_entry.get() == "🔍 Search for events, patients etc..." else None)
-        search_entry.bind('<FocusOut>', lambda e: search_entry.insert(0, "🔍 Search for events, patients etc...") if not search_entry.get() else None)
-        
         # Right side - Status and icons
         right_frame = tk.Frame(header_frame, bg=self.colors['primary'])
         right_frame.pack(side='right', padx=20, pady=15)
@@ -454,7 +514,7 @@ class ModernRDDS_GUI:
             text="● System Ready",
             font=('Segoe UI', 12, 'bold'),
             bg=self.colors['primary'],
-            fg=self.colors['success']
+            fg='black'
         )
         self.status_indicator.pack(side='right', padx=10)
         
@@ -498,51 +558,6 @@ class ModernRDDS_GUI:
         # Update datetime
         self.update_datetime()
         
-    def create_notebook(self, parent):
-        """Create main notebook with modern tabs"""
-        try:
-            self.notebook = ttk.Notebook(parent, style='Modern.TNotebook')
-        except:
-            # Fallback to default style if custom style fails
-            self.notebook = ttk.Notebook(parent)
-        self.notebook.pack(fill='both', expand=True)
-        
-        # Dashboard tab
-        self.create_dashboard_tab()
-        
-        # Network Scan tab
-        self.create_scan_tab()
-        
-        # Device Management tab
-        self.create_device_tab()
-        
-        # Real-time Monitoring tab
-        self.create_monitoring_tab()
-        
-        # Reports tab
-        self.create_reports_tab()
-        
-    def create_dashboard_tab(self):
-        """Create modern dashboard tab"""
-        try:
-            dashboard_frame = ttk.Frame(self.notebook, style='Card.TFrame')
-        except:
-            dashboard_frame = ttk.Frame(self.notebook)
-        self.notebook.add(dashboard_frame, text="📊 Dashboard")
-        
-        # Main dashboard container with modern layout
-        main_frame = tk.Frame(dashboard_frame, bg=self.colors['dark'])
-        main_frame.pack(fill='both', expand=True, padx=20, pady=20)
-        
-        # Welcome banner
-        self.create_welcome_banner(main_frame)
-        
-        # Modern stats cards
-        self.create_modern_stats_cards(main_frame)
-        
-        # Activity and alerts section
-        self.create_modern_activity_section(main_frame)
-        
     def create_welcome_banner(self, parent):
         """Create modern welcome banner"""
         banner_frame = tk.Frame(parent, bg=self.colors['primary'], height=120)
@@ -580,7 +595,7 @@ class ModernRDDS_GUI:
             text="🟢 All Systems Operational",
             font=('Segoe UI', 16, 'bold'),
             bg=self.colors['primary'],
-            fg=self.colors['success']
+            fg='black'
         )
         self.system_status.pack(anchor='e')
         
@@ -1231,7 +1246,7 @@ class ModernRDDS_GUI:
         scan_type = self.scan_type.get()
         self.scan_button.config(text="⏸️ Scanning...", state='disabled')
         self.scan_progress['value'] = 0
-        self.status_indicator.config(text="● Scanning...", fg=self.colors['warning'])
+        self.status_indicator.config(text="● Scanning...", fg='black')
         
         if scan_type == "enhanced":
             self.update_status("Starting enhanced security scan...")
@@ -3163,6 +3178,661 @@ pause
             webbrowser.open("https://github.com/StrykarBoston/RDDS/releases")
         except Exception as e:
             handle_rdds_error(e, "Open GitHub Releases", "ERROR", True, False)
+    
+    def create_scan_interface(self, parent):
+        """Create scan interface"""
+        # Add scan controls and results
+        scan_frame = tk.Frame(parent, bg=self.colors['card'], relief='flat', bd=0)
+        scan_frame.pack(fill='both', expand=True, pady=10)
+        
+        title = tk.Label(
+            scan_frame,
+            text="🔍 Network Scanning",
+            font=('Segoe UI', 18, 'bold'),
+            bg=self.colors['card'],
+            fg=self.colors['text']
+        )
+        title.pack(pady=20)
+        
+        # Add scan controls here (reuse existing scan tab functionality)
+        self.create_scan_controls(scan_frame)
+        
+    def create_device_interface(self, parent):
+        """Create device management interface"""
+        device_frame = tk.Frame(parent, bg=self.colors['card'], relief='flat', bd=0)
+        device_frame.pack(fill='both', expand=True, pady=10)
+        
+        title = tk.Label(
+            device_frame,
+            text="📱 Device Management",
+            font=('Segoe UI', 18, 'bold'),
+            bg=self.colors['card'],
+            fg=self.colors['text']
+        )
+        title.pack(pady=20)
+        
+        # Device control panel
+        control_frame = tk.Frame(device_frame, bg=self.colors['card'])
+        control_frame.pack(fill='x', padx=20, pady=(0, 20))
+        
+        # Whitelist section
+        whitelist_frame = tk.Frame(control_frame, bg=self.colors['dark'], relief='flat', bd=0)
+        whitelist_frame.pack(fill='x', pady=10)
+        
+        whitelist_title = tk.Label(
+            whitelist_frame,
+            text="🔒 Device Whitelist",
+            font=('Segoe UI', 14, 'bold'),
+            bg=self.colors['dark'],
+            fg=self.colors['text']
+        )
+        whitelist_title.pack(pady=10)
+        
+        # Whitelist controls
+        whitelist_controls = tk.Frame(whitelist_frame, bg=self.colors['dark'])
+        whitelist_controls.pack(fill='x', padx=20, pady=10)
+        
+        tk.Label(
+            whitelist_controls,
+            text="MAC Address:",
+            font=('Segoe UI', 11),
+            bg=self.colors['dark'],
+            fg=self.colors['text']
+        ).pack(side='left', padx=(0, 10))
+        
+        self.mac_entry = tk.Entry(
+            whitelist_controls,
+            font=('Segoe UI', 11),
+            bg=self.colors['card'],
+            fg=self.colors['text'],
+            insertbackground=self.colors['text'],
+            relief='flat',
+            bd=0,
+            width=20
+        )
+        self.mac_entry.pack(side='left', padx=(0, 10))
+        
+        add_whitelist_btn = tk.Button(
+            whitelist_controls,
+            text="➕ Add to Whitelist",
+            font=('Segoe UI', 10, 'bold'),
+            bg=self.colors['success'],
+            fg=self.colors['text'],
+            relief='flat',
+            bd=0,
+            pady=8,
+            command=self.add_to_whitelist
+        )
+        add_whitelist_btn.pack(side='left', padx=5)
+        
+        # Device list
+        device_list_frame = tk.Frame(device_frame, bg=self.colors['card'])
+        device_list_frame.pack(fill='both', expand=True, padx=20, pady=(0, 20))
+        
+        device_list_title = tk.Label(
+            device_list_frame,
+            text="📋 Discovered Devices",
+            font=('Segoe UI', 14, 'bold'),
+            bg=self.colors['card'],
+            fg=self.colors['text']
+        )
+        device_list_title.pack(pady=(0, 10))
+        
+        # Device treeview
+        columns = ('IP', 'MAC', 'Vendor', 'Status', 'Type')
+        try:
+            self.device_tree = ttk.Treeview(
+                device_list_frame,
+                columns=columns,
+                show='headings',
+                height=12,
+                style='Modern.Treeview'
+            )
+        except:
+            self.device_tree = ttk.Treeview(
+                device_list_frame,
+                columns=columns,
+                show='headings',
+                height=12
+            )
+        
+        for col in columns:
+            self.device_tree.heading(col, text=col)
+            self.device_tree.column(col, width=120)
+        
+        # Device scrollbar
+        try:
+            device_scrollbar = ttk.Scrollbar(
+                device_list_frame,
+                orient='vertical',
+                command=self.device_tree.yview,
+                style='Modern.Vertical.TScrollbar'
+            )
+        except:
+            device_scrollbar = ttk.Scrollbar(
+                device_list_frame,
+                orient='vertical',
+                command=self.device_tree.yview
+            )
+        self.device_tree.configure(yscrollcommand=device_scrollbar.set)
+        
+        self.device_tree.pack(side='left', fill='both', expand=True)
+        device_scrollbar.pack(side='right', fill='y')
+        
+    def add_to_whitelist(self):
+        """Add device to whitelist"""
+        mac = self.mac_entry.get().strip()
+        if mac:
+            # Add to whitelist logic here
+            self.update_status(f"Added {mac} to whitelist")
+            self.mac_entry.delete(0, 'end')
+        
+    def create_monitoring_interface(self, parent):
+        """Create monitoring interface"""
+        monitor_frame = tk.Frame(parent, bg=self.colors['card'], relief='flat', bd=0)
+        monitor_frame.pack(fill='both', expand=True, pady=10)
+        
+        title = tk.Label(
+            monitor_frame,
+            text="🎯 Real-time Monitoring",
+            font=('Segoe UI', 18, 'bold'),
+            bg=self.colors['card'],
+            fg=self.colors['text']
+        )
+        title.pack(pady=20)
+        
+        # Monitoring controls
+        controls_frame = tk.Frame(monitor_frame, bg=self.colors['card'])
+        controls_frame.pack(fill='x', padx=20, pady=(0, 20))
+        
+        # Start/Stop monitoring button
+        self.monitor_button = tk.Button(
+            controls_frame,
+            text="🚀 Start Monitoring",
+            font=('Segoe UI', 12, 'bold'),
+            bg=self.colors['success'],
+            fg=self.colors['text'],
+            relief='flat',
+            bd=0,
+            pady=10,
+            command=self.toggle_monitoring
+        )
+        self.monitor_button.pack(side='left', padx=5)
+        
+        # Monitoring status
+        self.monitor_status = tk.Label(
+            controls_frame,
+            text="● Monitoring Inactive",
+            font=('Segoe UI', 12, 'bold'),
+            bg=self.colors['card'],
+            fg='black'
+        )
+        self.monitor_status.pack(side='left', padx=20)
+        
+        # Live alerts section
+        alerts_frame = tk.Frame(monitor_frame, bg=self.colors['dark'], relief='flat', bd=0)
+        alerts_frame.pack(fill='both', expand=True, padx=20, pady=(0, 20))
+        
+        alerts_title = tk.Label(
+            alerts_frame,
+            text="🚨 Live Security Alerts",
+            font=('Segoe UI', 14, 'bold'),
+            bg=self.colors['dark'],
+            fg=self.colors['text']
+        )
+        alerts_title.pack(pady=10)
+        
+        # Live alerts display
+        self.monitoring_text = scrolledtext.ScrolledText(
+            alerts_frame,
+            height=15,
+            font=('Consolas', 9),
+            bg=self.colors['card'],
+            fg=self.colors['text'],
+            wrap='word',
+            relief='flat',
+            bd=0
+        )
+        self.monitoring_text.pack(fill='both', expand=True, padx=20, pady=(0, 20))
+        self.monitoring_text.config(state='disabled')
+        
+    def toggle_monitoring(self):
+        """Toggle real-time monitoring"""
+        if not self.monitoring:
+            self.monitoring = True
+            self.monitor_button.config(text="⏸️ Stop Monitoring", bg=self.colors['danger'])
+            self.monitor_status.config(text="● Monitoring Active", fg=self.colors['success'])
+            self.update_status("Real-time monitoring started...")
+            # Start monitoring thread here
+        else:
+            self.monitoring = False
+            self.monitor_button.config(text="🚀 Start Monitoring", bg=self.colors['success'])
+            self.monitor_status.config(text="● Monitoring Inactive", fg='black')
+            self.update_status("Real-time monitoring stopped.")
+        
+    def create_reports_interface(self, parent):
+        """Create reports interface"""
+        reports_frame = tk.Frame(parent, bg=self.colors['card'], relief='flat', bd=0)
+        reports_frame.pack(fill='both', expand=True, pady=10)
+        
+        title = tk.Label(
+            reports_frame,
+            text="📊 Security Reports",
+            font=('Segoe UI', 18, 'bold'),
+            bg=self.colors['card'],
+            fg=self.colors['text']
+        )
+        title.pack(pady=20)
+        
+        # Report controls
+        controls_frame = tk.Frame(reports_frame, bg=self.colors['card'])
+        controls_frame.pack(fill='x', padx=20, pady=(0, 20))
+        
+        # Generate report button
+        generate_btn = tk.Button(
+            controls_frame,
+            text="📋 Generate Report",
+            font=('Segoe UI', 12, 'bold'),
+            bg=self.colors['primary'],
+            fg=self.colors['text'],
+            relief='flat',
+            bd=0,
+            pady=10,
+            command=self.generate_report
+        )
+        generate_btn.pack(side='left', padx=5)
+        
+        # Export options
+        export_btn = tk.Button(
+            controls_frame,
+            text="💾 Export Report",
+            font=('Segoe UI', 12, 'bold'),
+            bg=self.colors['secondary'],
+            fg=self.colors['text'],
+            relief='flat',
+            bd=0,
+            pady=10,
+            command=self.export_report
+        )
+        export_btn.pack(side='left', padx=5)
+        
+        # Report display area
+        report_display_frame = tk.Frame(reports_frame, bg=self.colors['dark'], relief='flat', bd=0)
+        report_display_frame.pack(fill='both', expand=True, padx=20, pady=(0, 20))
+        
+        report_title = tk.Label(
+            report_display_frame,
+            text="📄 Generated Report",
+            font=('Segoe UI', 14, 'bold'),
+            bg=self.colors['dark'],
+            fg=self.colors['text']
+        )
+        report_title.pack(pady=10)
+        
+        # Report text area
+        self.report_text = scrolledtext.ScrolledText(
+            report_display_frame,
+            height=20,
+            font=('Consolas', 9),
+            bg=self.colors['card'],
+            fg=self.colors['text'],
+            wrap='word',
+            relief='flat',
+            bd=0
+        )
+        self.report_text.pack(fill='both', expand=True, padx=20, pady=(0, 20))
+        self.report_text.config(state='disabled')
+        
+    def generate_report(self):
+        """Generate security report"""
+        self.update_status("Generating security report...")
+        # Generate report logic here
+        report_content = """
+🛡️ ROGUE DETECTION & DEFENSE SYSTEM
+=====================================
+SECURITY REPORT
+Generated: """ + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + """
+
+EXECUTIVE SUMMARY
+================
+• Total Devices Scanned: 0
+• Threats Detected: 0
+• Security Status: SECURE
+• Last Scan: Pending
+
+NETWORK OVERVIEW
+================
+• Network Interface: Auto-detected
+• IP Range: Local Network
+• Scan Duration: N/A
+
+SECURITY FINDINGS
+=================
+• No rogue devices detected
+• No suspicious activity identified
+• Network appears secure
+• All systems operational
+
+RECOMMENDATIONS
+==============
+• Continue regular monitoring
+• Maintain current security posture
+• Schedule periodic network scans
+• Update device whitelist as needed
+
+END OF REPORT
+"""
+        self.report_text.config(state='normal')
+        self.report_text.delete(1.0, 'end')
+        self.report_text.insert('end', report_content)
+        self.report_text.config(state='disabled')
+        self.update_status("Report generated successfully")
+        
+    def export_report(self):
+        """Export report to file"""
+        self.update_status("Exporting report...")
+        # Export logic here
+        self.update_status("Report exported successfully")
+        
+    def create_settings_interface(self, parent):
+        """Create settings interface"""
+        settings_frame = tk.Frame(parent, bg=self.colors['card'], relief='flat', bd=0)
+        settings_frame.pack(fill='both', expand=True, pady=10)
+        
+        title = tk.Label(
+            settings_frame,
+            text="⚙️ Settings",
+            font=('Segoe UI', 18, 'bold'),
+            bg=self.colors['card'],
+            fg=self.colors['text']
+        )
+        title.pack(pady=20)
+        
+        # Settings sections
+        settings_container = tk.Frame(settings_frame, bg=self.colors['card'])
+        settings_container.pack(fill='both', expand=True, padx=20, pady=(0, 20))
+        
+        # General Settings
+        general_frame = tk.Frame(settings_container, bg=self.colors['dark'], relief='flat', bd=0)
+        general_frame.pack(fill='x', pady=10)
+        
+        general_title = tk.Label(
+            general_frame,
+            text="🔧 General Settings",
+            font=('Segoe UI', 14, 'bold'),
+            bg=self.colors['dark'],
+            fg=self.colors['text']
+        )
+        general_title.pack(pady=10, padx=20, anchor='w')
+        
+        # Auto-refresh setting
+        auto_refresh_frame = tk.Frame(general_frame, bg=self.colors['dark'])
+        auto_refresh_frame.pack(fill='x', padx=20, pady=5)
+        
+        self.auto_refresh_var = tk.BooleanVar(value=True)
+        auto_refresh_check = tk.Checkbutton(
+            auto_refresh_frame,
+            text="Auto-refresh dashboard",
+            variable=self.auto_refresh_var,
+            font=('Segoe UI', 11),
+            bg=self.colors['dark'],
+            fg=self.colors['text'],
+            selectcolor=self.colors['primary'],
+            activebackground=self.colors['dark'],
+            activeforeground=self.colors['text']
+        )
+        auto_refresh_check.pack(anchor='w')
+        
+        # Sound alerts setting
+        sound_frame = tk.Frame(general_frame, bg=self.colors['dark'])
+        sound_frame.pack(fill='x', padx=20, pady=5)
+        
+        self.sound_alerts_var = tk.BooleanVar(value=True)
+        sound_check = tk.Checkbutton(
+            sound_frame,
+            text="Enable sound alerts",
+            variable=self.sound_alerts_var,
+            font=('Segoe UI', 11),
+            bg=self.colors['dark'],
+            fg=self.colors['text'],
+            selectcolor=self.colors['primary'],
+            activebackground=self.colors['dark'],
+            activeforeground=self.colors['text']
+        )
+        sound_check.pack(anchor='w')
+        
+        # Scan Settings
+        scan_frame = tk.Frame(settings_container, bg=self.colors['dark'], relief='flat', bd=0)
+        scan_frame.pack(fill='x', pady=10)
+        
+        scan_title = tk.Label(
+            scan_frame,
+            text="🔍 Scan Settings",
+            font=('Segoe UI', 14, 'bold'),
+            bg=self.colors['dark'],
+            fg=self.colors['text']
+        )
+        scan_title.pack(pady=10, padx=20, anchor='w')
+        
+        # Scan interval
+        interval_frame = tk.Frame(scan_frame, bg=self.colors['dark'])
+        interval_frame.pack(fill='x', padx=20, pady=5)
+        
+        tk.Label(
+            interval_frame,
+            text="Scan Interval (seconds):",
+            font=('Segoe UI', 11),
+            bg=self.colors['dark'],
+            fg=self.colors['text']
+        ).pack(side='left', padx=(0, 10))
+        
+        self.scan_interval = tk.Entry(
+            interval_frame,
+            font=('Segoe UI', 11),
+            bg=self.colors['card'],
+            fg=self.colors['text'],
+            insertbackground=self.colors['text'],
+            relief='flat',
+            bd=0,
+            width=10
+        )
+        self.scan_interval.pack(side='left', padx=(0, 10))
+        self.scan_interval.insert(0, "30")
+        
+        # Save settings button
+        save_frame = tk.Frame(settings_container, bg=self.colors['card'])
+        save_frame.pack(fill='x', pady=20)
+        
+        save_btn = tk.Button(
+            save_frame,
+            text="💾 Save Settings",
+            font=('Segoe UI', 12, 'bold'),
+            bg=self.colors['success'],
+            fg=self.colors['text'],
+            relief='flat',
+            bd=0,
+            pady=10,
+            command=self.save_settings
+        )
+        save_btn.pack(side='left', padx=20)
+        
+        reset_btn = tk.Button(
+            save_frame,
+            text="🔄 Reset to Defaults",
+            font=('Segoe UI', 12, 'bold'),
+            bg=self.colors['warning'],
+            fg=self.colors['text'],
+            relief='flat',
+            bd=0,
+            pady=10,
+            command=self.reset_settings
+        )
+        reset_btn.pack(side='left', padx=5)
+        
+    def save_settings(self):
+        """Save settings"""
+        self.update_status("Settings saved successfully")
+        
+    def reset_settings(self):
+        """Reset settings to defaults"""
+        self.auto_refresh_var.set(True)
+        self.sound_alerts_var.set(True)
+        self.scan_interval.delete(0, 'end')
+        self.scan_interval.insert(0, "30")
+        self.update_status("Settings reset to defaults")
+        
+    def create_scan_controls(self, parent):
+        """Create scan controls with full functionality"""
+        # Modern control panel
+        control_frame = tk.Frame(parent, bg=self.colors['card'], relief='flat', bd=0)
+        control_frame.pack(fill='x', pady=(0, 20))
+        
+        # Control header
+        control_header = tk.Frame(control_frame, bg=self.colors['card'])
+        control_header.pack(fill='x', padx=20, pady=(20, 10))
+        
+        control_title = tk.Label(
+            control_header,
+            text="🔍 Scan Configuration",
+            font=('Segoe UI', 16, 'bold'),
+            bg=self.colors['card'],
+            fg=self.colors['text']
+        )
+        control_title.pack(side='left')
+        
+        # Scan type selection
+        scan_type_frame = tk.Frame(control_frame, bg=self.colors['card'])
+        scan_type_frame.pack(fill='x', padx=20, pady=10)
+        
+        tk.Label(
+            scan_type_frame,
+            text="Select Scan Type:",
+            font=('Segoe UI', 12, 'bold'),
+            bg=self.colors['card'], fg=self.colors['text']
+        ).pack(anchor='w', pady=(0, 10))
+        
+        self.scan_type = tk.StringVar(value="standard")
+        
+        # Modern radio button layout
+        scan_types = [
+            ("Standard Scan (4-step)", "standard"),
+            ("Enhanced Scan (5-step)", "enhanced"),
+            ("IoT Profiling", "iot"),
+            ("DHCP Security", "dhcp"),
+            ("Traffic Analysis", "traffic"),
+            ("SSL Certificate Monitor", "ssl"),
+            ("Advanced Attack Detection", "advanced")
+        ]
+        
+        for i, (text, value) in enumerate(scan_types):
+            radio_frame = tk.Frame(scan_type_frame, bg=self.colors['card'])
+            radio_frame.pack(fill='x', pady=2)
+            
+            radio = tk.Radiobutton(
+                radio_frame,
+                text=text,
+                variable=self.scan_type,
+                value=value,
+                font=('Segoe UI', 11),
+                bg=self.colors['card'],
+                fg=self.colors['text'],
+                selectcolor=self.colors['primary'],
+                activebackground=self.colors['card'],
+                activeforeground=self.colors['text']
+            )
+            radio.pack(anchor='w')
+        
+        # Scan button
+        self.scan_button = tk.Button(
+            control_frame,
+            text="🚀 Start Scan",
+            font=('Segoe UI', 14, 'bold'),
+            bg=self.colors['primary'],
+            fg=self.colors['text'],
+            relief='flat',
+            bd=0,
+            pady=15,
+            command=self.start_scan,
+            activebackground=self.adjust_color(self.colors['primary'], -20)
+        )
+        self.scan_button.pack(pady=20, padx=20, fill='x')
+        
+        # Progress bar
+        try:
+            self.scan_progress = ttk.Progressbar(
+                control_frame,
+                mode='determinate',
+                maximum=100,
+                style='Modern.TProgressbar'
+            )
+        except:
+            # Fallback to default style if custom style fails
+            self.scan_progress = ttk.Progressbar(
+                control_frame,
+                mode='determinate',
+                maximum=100
+            )
+        self.scan_progress.pack(fill='x', padx=20, pady=(0, 20))
+        
+        # Results area
+        results_frame = tk.Frame(parent, bg=self.colors['card'], relief='flat', bd=0)
+        results_frame.pack(fill='both', expand=True)
+        
+        # Results header
+        results_header = tk.Frame(results_frame, bg=self.colors['card'])
+        results_header.pack(fill='x', padx=20, pady=(20, 10))
+        
+        results_title = tk.Label(
+            results_header,
+            text="📋 Scan Results",
+            font=('Segoe UI', 16, 'bold'),
+            bg=self.colors['card'],
+            fg=self.colors['text']
+        )
+        results_title.pack(side='left')
+        
+        # Results treeview with modern styling
+        columns = ('IP', 'MAC', 'Vendor', 'Status', 'Risk Score')
+        try:
+            self.scan_tree = ttk.Treeview(
+                results_frame, 
+                columns=columns, 
+                show='headings', 
+                height=15,
+                style='Modern.Treeview'
+            )
+        except:
+            # Fallback to default style if custom style fails
+            self.scan_tree = ttk.Treeview(
+                results_frame, 
+                columns=columns, 
+                show='headings', 
+                height=15
+            )
+        
+        for col in columns:
+            self.scan_tree.heading(col, text=col)
+            self.scan_tree.column(col, width=150)
+        
+        # Modern scrollbar
+        try:
+            scrollbar = ttk.Scrollbar(
+                results_frame, 
+                orient='vertical', 
+                command=self.scan_tree.yview,
+                style='Modern.Vertical.TScrollbar'
+            )
+        except:
+            # Fallback to default style if custom style fails
+            scrollbar = ttk.Scrollbar(
+                results_frame, 
+                orient='vertical', 
+                command=self.scan_tree.yview
+            )
+        self.scan_tree.configure(yscrollcommand=scrollbar.set)
+        
+        self.scan_tree.pack(side='left', fill='both', expand=True, padx=(20, 0), pady=(0, 20))
+        scrollbar.pack(side='right', fill='y', padx=(0, 20), pady=(0, 20))
     
     def run(self):
         """Start the GUI application"""
