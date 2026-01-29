@@ -132,7 +132,6 @@ class AttackDetector:
             interfaces = psutil.net_if_addrs()
             if interface not in interfaces:
                 print(f"[!] ERROR: Interface {interface} not found")
-                print(f"[!] Available interfaces: {list(interfaces.keys())}")
                 return []
             
             # Clear previous alerts

@@ -106,8 +106,6 @@ class NetworkScanner:
         # Prioritize Wi-Fi first, then Ethernet, then others
         priority_names = ['Wi-Fi', 'Wireless', 'WLAN', 'WiFi', 'Ethernet', 'Local Area Connection']
         
-        print(f"[*] Available Windows interfaces: {list(interfaces.keys())}")
-        
         for priority in priority_names:
             if priority in interfaces:
                 for addr in interfaces[priority]:
@@ -128,8 +126,6 @@ class NetworkScanner:
         """Get Linux interface with IPv4 connectivity - prioritize Wi-Fi"""
         # Prioritize wireless interfaces first
         priority_names = ['wlan0', 'wlp2s0', 'wlan1', 'wlp3s0', 'wifi0', 'eth0', 'enp0s3', 'ens33']
-        
-        print(f"[*] Available Linux interfaces: {list(interfaces.keys())}")
         
         for priority in priority_names:
             if priority in interfaces:
@@ -203,7 +199,6 @@ class NetworkScanner:
             # Test interface availability
             if not self._test_interface():
                 print(f"[!] ERROR: Interface {self.interface} is not available")
-                print(f"[!] Available interfaces: {list(psutil.net_if_addrs().keys())}")
                 return []
             
             # Create ARP request with platform-specific settings
@@ -253,7 +248,6 @@ class NetworkScanner:
                     print("[!] Please run this application with sudo on Linux")
             elif "No such device" in str(e):
                 print(f"[!] Network interface '{self.interface}' not found or not available")
-                print(f"[!] Available interfaces: {list(psutil.net_if_addrs().keys())}")
             elif "Operation not permitted" in str(e):
                 print(f"[!] Operation not permitted - check privileges and interface status")
             return []
