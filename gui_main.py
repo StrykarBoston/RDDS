@@ -1232,58 +1232,7 @@ class ModernRDDS_GUI:
             fg=self.colors['text_secondary']
         )
         version_label.pack(side='right', padx=10, pady=5)
-        
-    def start_scan(self):
-        """Start network scan (standard or enhanced)"""
-        if self.current_scan_thread and self.current_scan_thread.is_alive():
-            messagebox.showwarning("Scan in Progress", "A scan is already running!")
-            return
-            
-        # Clear previous results
-        for item in self.scan_tree.get_children():
-            self.scan_tree.delete(item)
-            
-        # Update UI
-        scan_type = self.scan_type.get()
-        self.scan_button.config(text="⏸️ Scanning...", state='disabled')
-        self.scan_progress['value'] = 0
-        self.status_indicator.config(text="● Scanning...", fg='black')
-        
-        if scan_type == "enhanced":
-            self.update_status("Starting enhanced security scan...")
-        elif scan_type == "iot":
-            self.update_status("Starting IoT device profiling...")
-        elif scan_type == "dhcp":
-            self.update_status("Starting DHCP security monitoring...")
-        elif scan_type == "traffic":
-            self.update_status("Starting network traffic analysis...")
-        elif scan_type == "ssl":
-            self.update_status("Starting SSL certificate monitoring...")
-        elif scan_type == "advanced":
-            self.update_status("Starting advanced attack detection...")
-        else:
-            self.update_status("Starting network scan...")
-        
-        # Start scan in background
-        if scan_type == "standard":
-            self.current_scan_thread = threading.Thread(target=self._perform_scan, daemon=True)
-        elif scan_type == "enhanced":
-            self.current_scan_thread = threading.Thread(target=self._perform_enhanced_scan, daemon=True)
-        elif scan_type == "iot":
-            self.current_scan_thread = threading.Thread(target=self._perform_iot_scan, daemon=True)
-        elif scan_type == "dhcp":
-            self.current_scan_thread = threading.Thread(target=self._perform_dhcp_scan, daemon=True)
-        elif scan_type == "traffic":
-            self.current_scan_thread = threading.Thread(target=self._perform_traffic_scan, daemon=True)
-        elif scan_type == "ssl":
-            self.current_scan_thread = threading.Thread(target=self._perform_ssl_scan, daemon=True)
-        elif scan_type == "advanced":
-            self.current_scan_thread = threading.Thread(target=self._perform_advanced_scan, daemon=True)
-        self.current_scan_thread.start()
-        
-        # Check for results
-        self.root.after(100, self.check_scan_results)
-        
+
     def _perform_scan(self):
         """Perform the actual scan with progress updates"""
         try:
@@ -1735,45 +1684,7 @@ class ModernRDDS_GUI:
                 self.scan_progress['value'] = 0
                 self.scan_button.config(text="🚀 Start Scan", state='normal')
                 self.status_indicator.config(text="● Ready", fg=self.colors['success'])
-            
-    def display_scan_results(self, devices, alerts):
-        """Display scan results in treeview"""
-        # Clear existing items
-        for item in self.scan_tree.get_children():
-            self.scan_tree.delete(item)
-            
-        # Add devices
-        for device in devices:
-            # Determine tag based on status
-            tag = ''
-            if device['status'] == 'ROGUE':
-                tag = 'rogue'
-            elif device['status'] == 'SUSPICIOUS':
-                tag = 'suspicious'
-            else:
-                tag = 'trusted'
-                
-            self.scan_tree.insert('', 'end', values=(
-                device['ip'],
-                device['mac'],
-                device.get('vendor', 'Unknown'),
-                device['status'],
-                f"{device['risk_score']}/100"
-            ), tags=(tag,))
-            
-        # Configure tags
-        self.scan_tree.tag_configure('rogue', background='#ffebee')
-        self.scan_tree.tag_configure('suspicious', background='#fff3e0')
-        self.scan_tree.tag_configure('trusted', background='#e8f5e8')
-        
-        # Store for later report generation
-        self._last_devices = devices
-        self._last_alerts = alerts
-        
-        # Log alerts
-        for alert in alerts:
-            self.add_activity(f"🚨 [{alert['severity']}] {alert['type']}: {alert['message']}")
-            
+
     def update_dashboard_stats(self, devices):
         """Update dashboard statistics"""
         stats = {

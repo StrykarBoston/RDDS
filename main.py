@@ -198,135 +198,206 @@ class RogueDetectionSystem:
 ║   Enhanced with Advanced Detection                       ║
 ╚══════════════════════════════════════════════════════════╝
         """)
-    
-    def run_full_scan(self):
-        """Execute complete security scan"""
-        print("\n[1/4] 🔍 Discovering network devices...")
+
+    def run_continuous_monitoring(self):
+        """Continuous real-time monitoring combining all scan functionalities"""
+        import threading
+        import signal
+        import os
         
-        # Show current interface info
-        print(f"[*] Using interface: {self.scanner.interface}")
-        
-        network_range = self.scanner.get_network_range()
-        print(f"[*] Scanning network range: {network_range}")
-        
-        devices = self.scanner.arp_scan(network_range)
-        print(f"      ✓ Found {len(devices)} devices")
-        
-        if not devices:
-            print("\n⚠️  No devices found! This could be due to:")
-            print("   1. Wrong network interface selected")
-            print("   2. Insufficient privileges (run as Administrator/root)")
-            print("   3. Network configuration issues")
-            print("   4. Firewall blocking ARP requests")
-            
-            choice = input("\nWould you like to try a different interface? (y/N): ").strip().lower()
-            if choice == 'y':
-                # Re-initialize scanner with new interface
-                temp_scanner = NetworkScanner()
-                selected_interface = temp_scanner.select_interface_interactive()
-                if selected_interface:
-                    print(f"[*] Switching to interface: {selected_interface}")
-                    self.scanner = NetworkScanner(selected_interface)
-                    network_range = self.scanner.get_network_range()
-                    devices = self.scanner.arp_scan(network_range)
-                    print(f"      ✓ Found {len(devices)} devices with new interface")
-        
-        print("\n[2/4] 🕵️  Analyzing for rogue devices...")
-        analyzed_devices, alerts = self.detector.analyze_network(devices)
-        
-        rogue_count = sum(1 for d in analyzed_devices if d['status'] == 'ROGUE')
-        suspicious_count = sum(1 for d in analyzed_devices if d['status'] == 'SUSPICIOUS')
-        
-        print(f"      ✓ Rogue: {rogue_count} | Suspicious: {suspicious_count}")
-        
-        print("\n[3/4] 📡 Scanning wireless networks...")
-        wireless_networks = self.ap_detector.scan_wireless_networks_windows()
-        ap_alerts = self.ap_detector.detect_evil_twin(wireless_networks)
-        alerts.extend(ap_alerts)
-        print(f"      ✓ Found {len(wireless_networks)} APs, {len(ap_alerts)} alerts")
-        
-        print("\n[4/4] 💾 Generating report...")
-        report_file = self.logger.generate_report(analyzed_devices, alerts)
-        print(f"      ✓ Report saved: {report_file}")
-        
-        return analyzed_devices, alerts
-    
-    def run_enhanced_scan(self):
-        """Execute enhanced security scan with new detection capabilities"""
-        print("\n🚀 Starting Enhanced Security Scan...")
+        print("\n🔄 Starting Continuous Real-Time Monitoring...")
         print("="*60)
+        print("📡 Monitoring Features Active:")
+        print("  • Real-time device discovery and analysis")
+        print("  • Continuous wireless network scanning")
+        print("  • Deep packet inspection")
+        print("  • Attack detection and prevention")
+        print("  • Access point monitoring")
+        print("="*60)
+        print("\n⚠️  Press Ctrl+C to stop monitoring")
+        print("📊 Reports will be generated every 5 minutes")
         
-        # Step 1: Standard Network Discovery
-        print("[1/5] 🔍 Discovering network devices...")
-        print(f"[*] Using interface: {self.scanner.interface}")
+        # Global flag for stopping
+        self.monitoring_active = True
         
-        network_range = self.scanner.get_network_range()
-        print(f"[*] Scanning network range: {network_range}")
-        
-        devices = self.scanner.arp_scan(network_range)
-        print(f"      ✓ Found {len(devices)} devices")
-        
-        # Step 2: Traditional Rogue Detection
-        print("\n[2/5] 🕵️  Analyzing for rogue devices...")
-        analyzed_devices, alerts = self.detector.analyze_network(devices)
-        
-        rogue_count = sum(1 for d in analyzed_devices if d['status'] == 'ROGUE')
-        suspicious_count = sum(1 for d in analyzed_devices if d['status'] == 'SUSPICIOUS')
-        
-        print(f"      ✓ Rogue: {rogue_count} | Suspicious: {suspicious_count}")
-        
-        # Step 3: Enhanced Rogue AP Detection
-        print("\n[3/5] 📡 Enhanced wireless network analysis...")
-        wireless_networks = self.enhanced_ap_detector.scan_wireless_networks_windows()
-        enhanced_ap_alerts = self.enhanced_ap_detector.detect_evil_twin(wireless_networks)
-        rogue_ap_alerts = self.enhanced_ap_detector.detect_rogue_ap(wireless_networks)
-        karma_alerts = self.enhanced_ap_detector.detect_karma_attack(wireless_networks)
-        
-        alerts.extend(enhanced_ap_alerts)
-        alerts.extend(rogue_ap_alerts)
-        alerts.extend(karma_alerts)
-        
-        print(f"      ✓ Found {len(wireless_networks)} APs")
-        print(f"      ✓ Evil Twins: {len(enhanced_ap_alerts)} | Rogue APs: {len(rogue_ap_alerts)} | Karma Attacks: {len(karma_alerts)}")
-        
-        # Step 4: Deep Packet Inspection
-        print("\n[4/5] 🔬 Deep Packet Inspection...")
-        if devices:
-            # Simulate packet capture for DPI analysis
-            dpi_results = []
-            for device in devices[:20]:  # Limit to first 20 devices for demo
-                packet_data = {
-                    'size': 1500,
-                    'protocol': 'TCP',
-                    'src_port': 80,
-                    'dst_port': 8080,
-                    'flags': 0x18,
-                    'src_ip': device['ip'],
-                    'dst_ip': '8.8.8.8'
-                }
-                dpi_analysis = self.dpi_inspector.analyze_packet(packet_data)
-                dpi_results.append(dpi_analysis)
+        def signal_handler(signum, frame):
+            print("\n\n🛑 Stopping continuous monitoring...")
+            self.monitoring_active = False
             
-            high_risk_packets = [r for r in dpi_results if r['risk_score'] > 50]
-            print(f"      ✓ Analyzed {len(dpi_results)} packet samples")
-            print(f"      ✓ High-risk packets: {len(high_risk_packets)}")
+        signal.signal(signal.SIGINT, signal_handler)
+        
+        # Initialize monitoring data
+        known_devices = {}
+        all_alerts = []
+        scan_cycle = 0
+        
+        try:
+            while self.monitoring_active:
+                scan_cycle += 1
+                print(f"\n{'='*60}")
+                print(f"🔄 SCAN CYCLE #{scan_cycle} - {datetime.now().strftime('%H:%M:%S')}")
+                print(f"{'='*60}")
+                
+                # Step 1: Network Device Discovery
+                print("[1/5] 🔍 Discovering network devices...")
+                network_range = self.scanner.get_network_range()
+                current_devices = self.scanner.arp_scan(network_range)
+                print(f"      ✓ Found {len(current_devices)} devices")
+                
+                # Step 2: Device Analysis and Change Detection
+                print("[2/5] 🕵️  Analyzing devices for changes...")
+                analyzed_devices, alerts = self.detector.analyze_network(current_devices)
+                
+                # Detect new/unknown devices
+                new_devices = []
+                for device in analyzed_devices:
+                    device_key = f"{device['ip']}_{device['mac']}"
+                    if device_key not in known_devices:
+                        new_devices.append(device)
+                        known_devices[device_key] = {
+                            'first_seen': datetime.now(),
+                            'status': device['status'],
+                            'last_seen': datetime.now()
+                        }
+                        
+                        # Alert for new devices
+                        if device['status'] in ['ROGUE', 'SUSPICIOUS']:
+                            alert = {
+                                'type': 'NEW_UNKNOWN_DEVICE',
+                                'severity': 'HIGH' if device['status'] == 'ROGUE' else 'MEDIUM',
+                                'message': f"New {device['status'].lower()} device detected: {device['ip']} ({device['mac']})",
+                                'device': device,
+                                'timestamp': datetime.now().isoformat()
+                            }
+                            alerts.append(alert)
+                            all_alerts.append(alert)
+                            print(f"      🚨 ALERT: {alert['message']}")
+                    else:
+                        known_devices[device_key]['last_seen'] = datetime.now()
+                
+                rogue_count = sum(1 for d in analyzed_devices if d['status'] == 'ROGUE')
+                suspicious_count = sum(1 for d in analyzed_devices if d['status'] == 'SUSPICIOUS')
+                print(f"      ✓ Rogue: {rogue_count} | Suspicious: {suspicious_count} | New: {len(new_devices)}")
+                
+                # Step 3: Enhanced Wireless Monitoring
+                print("[3/5] 📡 Monitoring wireless networks...")
+                wireless_networks = self.enhanced_ap_detector.scan_wireless_networks_windows()
+                enhanced_ap_alerts = self.enhanced_ap_detector.detect_evil_twin(wireless_networks)
+                rogue_ap_alerts = self.enhanced_ap_detector.detect_rogue_ap(wireless_networks)
+                karma_alerts = self.enhanced_ap_detector.detect_karma_attack(wireless_networks)
+                
+                all_wireless_alerts = enhanced_ap_alerts + rogue_ap_alerts + karma_alerts
+                alerts.extend(all_wireless_alerts)
+                all_alerts.extend(all_wireless_alerts)
+                
+                if all_wireless_alerts:
+                    print(f"      🚨 Wireless Alerts: {len(all_wireless_alerts)}")
+                    for alert in all_wireless_alerts[:3]:  # Show first 3 alerts
+                        print(f"         • {alert.get('message', 'Unknown wireless threat')}")
+                
+                print(f"      ✓ APs: {len(wireless_networks)} | Threats: {len(all_wireless_alerts)}")
+                
+                # Step 4: Deep Packet Inspection (sample)
+                print("[4/5] 🔬 Deep packet inspection...")
+                if current_devices:
+                    dpi_results = []
+                    for device in current_devices[:10]:  # Sample 10 devices each cycle
+                        packet_data = {
+                            'size': 1500,
+                            'protocol': 'TCP',
+                            'src_port': 80,
+                            'dst_port': 8080,
+                            'flags': 0x18,
+                            'src_ip': device['ip'],
+                            'dst_ip': '8.8.8.8'
+                        }
+                        dpi_analysis = self.dpi_inspector.analyze_packet(packet_data)
+                        dpi_results.append(dpi_analysis)
+                    
+                    high_risk_packets = [r for r in dpi_results if r['risk_score'] > 50]
+                    if high_risk_packets:
+                        print(f"      🚨 High-risk packets: {len(high_risk_packets)}")
+                        for result in high_risk_packets[:2]:  # Show first 2
+                            for anomaly in result['anomalies']:
+                                alert = {
+                                    'type': 'DPI_ANOMALY',
+                                    'severity': 'HIGH' if result['risk_score'] > 70 else 'MEDIUM',
+                                    'message': f"{anomaly['type']}: {anomaly['description']}",
+                                    'risk_score': result['risk_score'],
+                                    'timestamp': datetime.now().isoformat()
+                                }
+                                all_alerts.append(alert)
+                                print(f"         • {alert['message']}")
+                
+                # Step 5: Real-time Attack Detection
+                print("[5/5] 🛡️  Real-time attack monitoring...")
+                attack_alerts = self.attack_detector.start_monitoring(
+                    interface=self.scanner.interface, 
+                    duration=30  # Short monitoring burst
+                )
+                alerts.extend(attack_alerts)
+                all_alerts.extend(attack_alerts)
+                
+                if attack_alerts:
+                    print(f"      🚨 Attack Alerts: {len(attack_alerts)}")
+                    for alert in attack_alerts[:2]:  # Show first 2
+                        print(f"         • {alert.get('message', 'Attack detected')}")
+                
+                # Summary for this cycle
+                print(f"\n📊 CYCLE #{scan_cycle} SUMMARY:")
+                print(f"  Total Devices: {len(analyzed_devices)}")
+                print(f"  New Devices: {len(new_devices)}")
+                print(f"  Rogue Devices: {rogue_count}")
+                print(f"  Suspicious Devices: {suspicious_count}")
+                print(f"  Wireless Threats: {len(all_wireless_alerts)}")
+                print(f"  Attack Alerts: {len(attack_alerts)}")
+                print(f"  Total Alerts This Cycle: {len(alerts)}")
+                print(f"  All-time Alerts: {len(all_alerts)}")
+                
+                # Generate periodic report (every 5 cycles or when significant alerts)
+                if scan_cycle % 5 == 0 or len(alerts) > 0:
+                    print(f"\n📄 Generating monitoring report...")
+                    report_file = self.logger.generate_report(analyzed_devices, all_alerts)
+                    print(f"      ✓ Report saved: {report_file}")
+                
+                # Wait before next scan (adjustable interval)
+                if self.monitoring_active:
+                    print(f"\n⏳ Next scan in 60 seconds... (Ctrl+C to stop)")
+                    for i in range(60, 0, -1):
+                        if not self.monitoring_active:
+                            break
+                        print(f"\r   Waiting: {i:2d}s", end="", flush=True)
+                        time.sleep(1)
+                    print("\r" + " " * 20 + "\r", end="", flush=True)
+                
+        except KeyboardInterrupt:
+            print("\n\n🛑 Monitoring stopped by user")
+        except Exception as e:
+            print(f"\n❌ Monitoring error: {e}")
+            handle_rdds_error(e, "Continuous Monitoring", "ERROR", True, False)
+        finally:
+            self.monitoring_active = False
             
-            # Add DPI alerts
-            for result in high_risk_packets:
-                for anomaly in result['anomalies']:
-                    alerts.append({
-                        'type': 'DPI_ANOMALY',
-                        'severity': 'HIGH' if result['risk_score'] > 70 else 'MEDIUM',
-                        'message': f"{anomaly['type']}: {anomaly['description']}",
-                        'risk_score': result['risk_score']
-                    })
-        
-        # Step 5: Generate Enhanced Report
-        print("\n[5/5] 📊 Generating enhanced report...")
-        report_file = self.logger.generate_report(analyzed_devices, alerts)
-        print(f"      ✓ Enhanced report saved: {report_file}")
-        
-        return analyzed_devices, alerts, wireless_networks, dpi_results if 'dpi_results' in locals() else []
+            # Final report
+            print(f"\n📊 FINAL MONITORING SUMMARY:")
+            print(f"  Total Cycles: {scan_cycle}")
+            print(f"  Total Devices Tracked: {len(known_devices)}")
+            print(f"  Total Alerts Generated: {len(all_alerts)}")
+            
+            if all_alerts:
+                print(f"\n🚨 CRITICAL ALERTS REQUIRING ATTENTION:")
+                critical_alerts = [a for a in all_alerts if a.get('severity') == 'HIGH' or a.get('severity') == 'CRITICAL']
+                for alert in critical_alerts[:10]:  # Show top 10
+                    print(f"  • {alert.get('message', 'Unknown alert')}")
+            
+            # Generate final comprehensive report
+            print(f"\n📄 Generating final comprehensive report...")
+            final_devices = list(known_devices.values())
+            final_report = self.logger.generate_report(final_devices, all_alerts)
+            print(f"      ✓ Final report saved: {final_report}")
+            
+            print(f"\n✅ Continuous monitoring completed successfully!")
+            print(f"📁 All reports saved in logs/ directory")
     
     def run_iot_profiling(self):
         """IoT Device Profiling & Risk Assessment"""
@@ -1462,22 +1533,21 @@ class RogueDetectionSystem:
             print("\n" + "="*60)
             print("MAIN MENU")
             print("="*60)
-            print("1. Run Full Network Scan (Standard)")
-            print("2. Run Enhanced Security Scan (NEW)")
-            print("3. IoT Device Profiling & Risk Assessment")
-            print("4. DHCP Security Monitoring")
-            print("5. Network Traffic Analysis (NetFlow/sFlow)")
-            print("6. SSL/TLS Certificate Monitoring")
-            print("7. Advanced Attack Detection")
-            print("8. Monitor for Attacks (Real-time)")
-            print("9. View Whitelist")
-            print("10. Add Device to Whitelist")
-            print("11. Edit Device in Whitelist")
-            print("12. Remove Device from Whitelist")
-            print("13. Advanced Settings Configuration")
-            print("14. Generate Report")
-            print("15. Manual Update Instructions")
-            print("16. Exit")
+            print("1. 🔄 Start Continuous Real-Time Monitoring")
+            print("2. IoT Device Profiling & Risk Assessment")
+            print("3. DHCP Security Monitoring")
+            print("4. Network Traffic Analysis (NetFlow/sFlow)")
+            print("5. SSL/TLS Certificate Monitoring")
+            print("6. Advanced Attack Detection")
+            print("7. Monitor for Attacks (Real-time)")
+            print("8. View Whitelist")
+            print("9. Add Device to Whitelist")
+            print("10. Edit Device in Whitelist")
+            print("11. Remove Device from Whitelist")
+            print("12. Advanced Settings Configuration")
+            print("13. Generate Report")
+            print("14. Manual Update Instructions")
+            print("15. Exit")
             
             choice = input("\nSelect option (or 'back' to return): ").strip()
             
@@ -1486,35 +1556,22 @@ class RogueDetectionSystem:
                 continue
             
             if choice == '1':
-                devices, alerts = self.run_full_scan()
-                self.display_results(devices, alerts)
-                # Store for later report generation
-                self._last_devices = devices
-                self._last_alerts = alerts
+                self.run_continuous_monitoring()
                 
             elif choice == '2':
-                devices, alerts, wireless_networks, dpi_results = self.run_enhanced_scan()
-                self.display_enhanced_results(devices, alerts, wireless_networks, dpi_results)
-                # Store for later report generation
-                self._last_devices = devices
-                self._last_alerts = alerts
-                self._last_wireless_networks = wireless_networks
-                self._last_dpi_results = dpi_results
-                
-            elif choice == '3':
                 self.run_iot_profiling()
                 
-            elif choice == '4':
+            elif choice == '3':
                 self.run_dhcp_security()
                 
-            elif choice == '5':
+            elif choice == '4':
                 try:
                     duration = int(input("Traffic analysis duration (seconds, default=300): ") or "300")
                     self.run_traffic_analysis(duration)
                 except ValueError:
                     print("❌ Please enter a valid number!")
                     
-            elif choice == '6':
+            elif choice == '5':
                 hosts_input = input("Enter hosts to monitor (comma-separated): ").strip()
                 if hosts_input:
                     hosts = [h.strip() for h in hosts_input.split(',')]
@@ -1526,43 +1583,44 @@ class RogueDetectionSystem:
                 else:
                     print("❌ No hosts specified!")
                     
-            elif choice == '7':
+            elif choice == '6':
                 try:
                     duration = int(input("Advanced attack detection duration (seconds, default=60): ") or "60")
                     self.run_advanced_attack_detection(duration)
                 except ValueError:
                     print("❌ Please enter a valid number!")
                     
-            elif choice == '8':
+            elif choice == '7':
                 try:
                     duration = int(input("Monitor duration (seconds): "))
                     self.monitor_attacks(duration)
                 except ValueError:
                     print("❌ Please enter a valid number!")
                     
-            elif choice == '9':
+            elif choice == '8':
                 self.view_whitelist()
                 
-            elif choice == '10':
+            elif choice == '9':
                 self.add_device_to_whitelist()
                 
-            elif choice == '11':
+            elif choice == '10':
                 self.edit_device_from_whitelist()
                 
-            elif choice == '12':
+            elif choice == '11':
                 self.remove_device_from_whitelist()
                 
-            elif choice == '13':
+            elif choice == '12':
                 self.advanced_settings_menu()
                 
-            elif choice == '14':
+            elif choice == '13':
                 self.generate_report_interactive()
                 
-            elif choice == '15':
+            elif choice == '14':
                 self.show_manual_update_info()
                 
-            elif choice == '16':
-                print("\n👋 Exiting...")
+            elif choice == '15':
+                print("\n[*] Thank you for using RDDS!")
+                print("[*] Stay secure!")
                 break
             else:
                 print("❌ Invalid option. Please try again.")
