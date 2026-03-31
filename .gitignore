@@ -1,0 +1,36 @@
+# Python Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+.venv/
+env/
+venv/
+ENV/
+
+# IDE Settings (Optional, but often ignored)
+.vscode/
+.idea/
+*.swp
+
+# Project-Specific Data
+# Do NOT upload local databases or user configs
+data/rdds.db
+data/whitelist.json
+data/allowlist.txt
+
+# Logs
+logs/
+*.log
+
+# Generated Reports
+reports/
+
+# Temporary / OS files
+.DS_Store
+Thumbs.db
+tmp/
+debug_ta.py
+test_ta.py
+*bootstrap.py

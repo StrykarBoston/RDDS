@@ -1,0 +1,14 @@
+{
+    "include": [
+        "."
+    ],
+    "extraPaths": [
+        ".",
+        "f:/Hackthone/RDDS-P"
+    ],
+    "venvPath": ".",
+    "venv": ".venv",
+    "pythonVersion": "3.10",
+    "reportMissingImports": false,
+    "reportMissingModuleSource": false
+}

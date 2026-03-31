@@ -1,0 +1,2469 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RDDS — Rogue Device Detection System</title>
+  <meta name="description"
+    content="Enterprise-grade Rogue Device Detection System with IoT Profiling, DHCP Security, and Traffic Analysis." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="/static/css/dashboard.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* ── Extra styles for new panels ── */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.2rem;
+      margin-bottom: 1.5rem
+    }
+
+    .feature-stat {
+      background: linear-gradient(135deg, #141720 60%, #1a1f2e);
+      border: 1px solid #1e2430;
+      border-radius: 14px;
+      padding: 1.2rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem
+    }
+
+    .feature-stat-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 1.4rem
+    }
+
+    .fsi-purple {
+      background: rgba(139, 92, 246, .15);
+      color: #8b5cf6
+    }
+
+    .fsi-orange {
+      background: rgba(251, 146, 60, .15);
+      color: #fb923c
+    }
+
+    .fsi-cyan {
+      background: rgba(34, 211, 238, .15);
+      color: #22d3ee
+    }
+
+    .fsi-red {
+      background: rgba(239, 68, 68, .15);
+      color: #ef4444
+    }
+
+    .feature-stat-val {
+      font-size: 1.8rem;
+      font-weight: 700;
+      line-height: 1
+    }
+
+    .feature-stat-label {
+      font-size: .75rem;
+      color: #7a8499;
+      margin-top: .2rem
+    }
+
+    .cve-badge {
+      display: inline-block;
+      font-size: .68rem;
+      padding: .2rem .5rem;
+      border-radius: 4px;
+      font-weight: 600
+    }
+
+    .cve-CRITICAL {
+      background: rgba(239, 68, 68, .2);
+      color: #ef4444
+    }
+
+    .cve-HIGH {
+      background: rgba(251, 113, 133, .15);
+      color: #fb7185
+    }
+
+    .cve-MEDIUM {
+      background: rgba(251, 146, 60, .15);
+      color: #fb923c
+    }
+
+    .btn-reset {
+      background: rgba(239, 68, 68, .1);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, .2);
+      padding: .5rem 1rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: .85rem;
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .btn-reset:hover {
+      background: rgba(239, 68, 68, .2);
+      border-color: #ef4444;
+      box-shadow: 0 0 15px rgba(239, 68, 68, .25);
+    }
+
+    .cve-LOW {
+      background: rgba(34, 197, 94, .15);
+      color: #22c55e
+    }
+
+    .port-row {
+      display: inline-flex;
+      gap: .4rem;
+      flex-wrap: wrap
+    }
+
+    .port-chip {
+      background: #1e2430;
+      border: 1px solid #2a3140;
+      border-radius: 5px;
+      padding: .15rem .45rem;
+      font-size: .7rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: #7ee8a2
+    }
+
+    .port-chip.danger {
+      color: #f87171;
+      border-color: rgba(248, 113, 113, .3)
+    }
+
+    .dhcp-event-row {
+      display: flex;
+      align-items: center;
+      gap: .8rem;
+      padding: .7rem 1rem;
+      border-bottom: 1px solid #141720;
+      transition: .15s
+    }
+
+    .dhcp-event-row:hover {
+      background: #141720
+    }
+
+    .dhcp-badge {
+      font-size: .7rem;
+      padding: .2rem .5rem;
+      border-radius: 4px;
+      font-weight: 600;
+      min-width: 70px;
+      text-align: center
+    }
+
+    .dhcp-DISCOVER {
+      background: rgba(96, 165, 250, .15);
+      color: #60a5fa
+    }
+
+    .dhcp-OFFER {
+      background: rgba(251, 146, 60, .15);
+      color: #fb923c
+    }
+
+    .dhcp-ACK {
+      background: rgba(52, 211, 153, .15);
+      color: #34d399
+    }
+
+    .dhcp-NAK {
+      background: rgba(239, 68, 68, .15);
+      color: #ef4444
+    }
+
+    .dhcp-REQUEST {
+      background: rgba(167, 139, 250, .15);
+      color: #a78bfa
+    }
+
+    .dhcp-RELEASE {
+      background: rgba(156, 163, 175, .15);
+      color: #9ca3af
+    }
+
+    .dhcp-STARVATION {
+      background: rgba(239, 68, 68, .2);
+      color: #ef4444;
+      font-size: .72rem
+    }
+
+    .dhcp-ROGUE {
+      background: rgba(239, 68, 68, .25);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, .3);
+      font-weight: 700
+    }
+
+    .traffic-bar-container {
+      display: flex;
+      align-items: center;
+      gap: .8rem
+    }
+
+    .traffic-bar-label {
+      width: 130px;
+      font-size: .8rem;
+      color: #a0aec0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap
+    }
+
+    .traffic-bar-wrap {
+      flex: 1;
+      background: #1a1f2e;
+      border-radius: 4px;
+      height: 8px;
+      overflow: hidden
+    }
+
+    .traffic-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width .5s ease
+    }
+
+    .traffic-bar-val {
+      width: 90px;
+      font-size: .75rem;
+      color: #7a8499;
+      text-align: right
+    }
+
+    .anomaly-item {
+      padding: .8rem 1rem;
+      border-bottom: 1px solid #141720;
+      border-left: 3px solid transparent
+    }
+
+    .anomaly-item.severity-CRITICAL {
+      border-left-color: #ef4444;
+      background: rgba(239, 68, 68, .04)
+    }
+
+    .anomaly-item.severity-HIGH {
+      border-left-color: #fb7185;
+      background: rgba(251, 113, 133, .04)
+    }
+
+    .anomaly-item.severity-MEDIUM {
+      border-left-color: #fb923c;
+      background: rgba(251, 146, 60, .04)
+    }
+
+    .anomaly-type {
+      font-size: .72rem;
+      font-weight: 600;
+      letter-spacing: .05em;
+      color: #a78bfa
+    }
+
+    .anomaly-detail {
+      font-size: .82rem;
+      color: #a0aec0;
+      margin-top: .25rem
+    }
+
+    .anomaly-meta {
+      font-size: .7rem;
+      color: #4a5568;
+      margin-top: .2rem
+    }
+
+    .toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .45rem 1rem;
+      border-radius: 8px;
+      font-size: .82rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid;
+      transition: .15s
+    }
+
+    .toggle-btn.running {
+      background: rgba(239, 68, 68, .1);
+      border-color: rgba(239, 68, 68, .3);
+      color: #ef4444
+    }
+
+    .toggle-btn.running:hover {
+      background: rgba(239, 68, 68, .2)
+    }
+
+    .toggle-btn.stopped {
+      background: rgba(52, 211, 153, .1);
+      border-color: rgba(52, 211, 153, .3);
+      color: #34d399
+    }
+
+    .toggle-btn.stopped:hover {
+      background: rgba(52, 211, 153, .2)
+    }
+
+    .lease-row {
+      display: flex;
+      gap: 1rem;
+      padding: .6rem 1rem;
+      border-bottom: 1px solid #141720;
+      font-size: .8rem
+    }
+
+    .lease-mac {
+      font-family: 'JetBrains Mono', monospace;
+      color: #60a5fa;
+      width: 160px;
+      flex-shrink: 0
+    }
+
+    .lease-ip {
+      color: #22d3ee;
+      width: 120px;
+      flex-shrink: 0
+    }
+
+    .lease-server {
+      color: #7a8499
+    }
+
+    .scan-ring-sm {
+      width: 12px;
+      height: 12px;
+      border: 2px solid #00ff88;
+      border-top-color: transparent;
+      border-radius: 50%;
+      display: inline-block;
+      animation: spin .8s linear infinite;
+      margin-right: .4rem;
+      vertical-align: middle
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    .iot-profile-row {
+      padding: .75rem 1rem;
+      border-bottom: 1px solid #141720;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      cursor: pointer;
+      transition: .15s
+    }
+
+    .iot-profile-row:hover {
+      background: #141720
+    }
+
+    .iot-type-chip {
+      background: #1a1f2e;
+      border: 1px solid #2a3140;
+      border-radius: 6px;
+      padding: .2rem .6rem;
+      font-size: .72rem;
+      color: #a78bfa
+    }
+
+    .risk-meter {
+      width: 60px;
+      height: 8px;
+      border-radius: 4px;
+      background: #1a1f2e;
+      overflow: hidden
+    }
+
+    .risk-fill {
+      height: 100%;
+      border-radius: 4px
+    }
+
+    .risk-fill.LOW {
+      background: #22c55e
+    }
+
+    .risk-fill.MEDIUM {
+      background: #fb923c
+    }
+
+    .risk-fill.HIGH {
+      background: #ef4444
+    }
+
+    .risk-fill.CRITICAL {
+      background: linear-gradient(90deg, #ef4444, #dc2626);
+      box-shadow: 0 0 6px #ef444460
+    }
+
+    .flow-row {
+      display: grid;
+      grid-template-columns: 140px 140px 80px 60px 80px 80px;
+      gap: .5rem;
+      padding: .5rem 1rem;
+      border-bottom: 1px solid #141720;
+      font-size: .78rem;
+      align-items: center
+    }
+
+    .flow-row.header {
+      color: #4a5568;
+      font-size: .7rem;
+      font-weight: 600;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      border-bottom: 1px solid #1e2430
+    }
+
+    .proto-tcp {
+      color: #60a5fa
+    }
+
+    .proto-udp {
+      color: #34d399
+    }
+
+    .proto-icmp {
+      color: #a78bfa
+    }
+
+    .proto-other {
+      color: #7a8499
+    }
+
+    /* ── Network Interface Selector ── */
+    .iface-selector-wrap {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      background: #141720;
+      border: 1px solid #1e2430;
+      border-radius: 10px;
+      padding: .4rem .8rem;
+      cursor: pointer;
+      position: relative;
+      transition: border-color .2s
+    }
+
+    .iface-selector-wrap:hover {
+      border-color: #00ff88;
+    }
+
+    .iface-selector-wrap svg {
+      color: #22d3ee;
+      flex-shrink: 0;
+    }
+
+    .iface-selector-label {
+      font-size: .78rem;
+      color: #a0aec0;
+    }
+
+    .iface-selector-name {
+      font-size: .82rem;
+      font-weight: 600;
+      color: #e8edf5;
+      max-width: 150px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .iface-selector-ip {
+      font-size: .7rem;
+      color: #22d3ee;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .iface-dot-up {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 5px #22c55e80;
+      flex-shrink: 0;
+    }
+
+    .iface-dot-down {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #4a5568;
+      flex-shrink: 0;
+    }
+
+    .iface-dropdown {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      width: 340px;
+      background: #0e1117;
+      border: 1px solid #1e2430;
+      border-radius: 12px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, .5);
+      z-index: 1000;
+      overflow: hidden;
+      display: none;
+    }
+
+    .iface-dropdown.open {
+      display: block;
+    }
+
+    .iface-dropdown-header {
+      padding: .75rem 1rem;
+      font-size: .72rem;
+      font-weight: 600;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      color: #4a5568;
+      border-bottom: 1px solid #1e2430;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .iface-refresh-btn {
+      background: none;
+      border: none;
+      color: #22d3ee;
+      cursor: pointer;
+      font-size: .78rem;
+      padding: .2rem .4rem;
+      border-radius: 4px;
+      transition: background .15s;
+    }
+
+    .iface-refresh-btn:hover {
+      background: rgba(34, 211, 238, .1);
+    }
+
+    .iface-item {
+      display: flex;
+      align-items: center;
+      gap: .8rem;
+      padding: .7rem 1rem;
+      cursor: pointer;
+      border-bottom: 1px solid #141720;
+      transition: background .15s;
+    }
+
+    .iface-item:last-child {
+      border-bottom: none;
+    }
+
+    .iface-item:hover {
+      background: #141720;
+    }
+
+    .iface-item.selected {
+      background: rgba(34, 211, 238, .06);
+      border-left: 3px solid #22d3ee;
+    }
+
+    .iface-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .iface-item-name {
+      font-weight: 600;
+      font-size: .82rem;
+      color: #e8edf5;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .iface-item-desc {
+      font-size: .72rem;
+      color: #7a8499;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .iface-item-ip {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .7rem;
+      color: #22d3ee;
+      white-space: nowrap;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .iface-item-source {
+      font-size: .65rem;
+      color: #2a3140;
+      margin-top: .1rem;
+    }
+
+    /* Inline iface badge inside tab headers */
+    .iface-tab-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      background: rgba(34, 211, 238, .08);
+      border: 1px solid rgba(34, 211, 238, .2);
+      border-radius: 8px;
+      padding: .3rem .7rem;
+      font-size: .75rem;
+      color: #22d3ee;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .iface-tab-badge svg {
+      color: #22d3ee;
+    }
+
+    .iface-inline-select {
+      background: #0e1117;
+      border: 1px solid #1e2430;
+      border-radius: 8px;
+      color: #e8edf5;
+      font-size: .78rem;
+      padding: .3rem .7rem;
+      padding-right: 1.6rem;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2322d3ee' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right .5rem center;
+      transition: border-color .2s;
+      min-width: 160px;
+    }
+
+    .iface-inline-select:hover,
+    .iface-inline-select:focus {
+      border-color: #22d3ee;
+      outline: none;
+    }
+
+    .iface-inline-select option {
+      background: #0e1117;
+    }
+
+    .iface-loading-spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid #1e2430;
+      border-top-color: #22d3ee;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- SIDEBAR OVERLAY (mobile backdrop) -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00ff88" stroke-width="2">
+          <polygon points="12 2 2 7 2 17 12 22 22 17 22 7 12 2" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      </div>
+      <div class="logo-text">
+        <span class="logo-name">RDDS</span>
+        <span class="logo-tagline">v2.0 Enterprise</span>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-tab="overview" onclick="showTab('overview',this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" />
+        </svg>
+        <span>Overview</span>
+      </a>
+      <a href="#" class="nav-item" data-tab="devices" onclick="showTab('devices',this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="3" width="20" height="13" rx="2" />
+          <path d="M8 21h8M12 17v4" />
+        </svg>
+        <span>Devices</span>
+        <span class="badge" id="nav-device-count">0</span>
+      </a>
+      <a href="#" class="nav-item" data-tab="alerts" onclick="showTab('alerts',this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+        <span>Alerts</span>
+        <span class="badge badge-red" id="nav-alert-count">0</span>
+      </a>
+      <a href="#" class="nav-item" data-tab="whitelist" onclick="showTab('whitelist',this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        </svg>
+        <span>Whitelist</span>
+      </a>
+      <a href="#" class="nav-item" data-tab="scanner" onclick="showTab('scanner',this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.35-4.35" />
+        </svg>
+        <span>Scanner</span>
+      </a>
+      <a href="#" class="nav-item" data-tab="wifi_sec" onclick="showTab('wifi_sec',this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+          <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+          <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+          <line x1="12" y1="20" x2="12.01" y2="20" />
+        </svg>
+        <span>Wi-Fi Security</span>
+      </a>
+      <!-- NEW TABS -->
+      <div
+        style="padding:.6rem 1rem .2rem;font-size:.65rem;color:#4a5568;text-transform:uppercase;letter-spacing:.1em;margin-top:.5rem">
+        Advanced</div>
+      <a href="#" class="nav-item" data-tab="iot" onclick="showTab('iot',this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 2v3m0 14v3M2 12h3m14 0h3" />
+          <path d="M4.93 4.93l2.12 2.12m9.9 9.9 2.12 2.12M4.93 19.07l2.12-2.12m9.9-9.9 2.12-2.12" />
+        </svg>
+        <span>IoT Profiler</span>
+        <span class="badge" id="nav-iot-count">0</span>
+      </a>
+      <a href="#" class="nav-item" data-tab="dhcp" onclick="showTab('dhcp',this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="7" width="20" height="14" rx="2" />
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+        </svg>
+        <span>DHCP Monitor</span>
+        <span class="badge badge-red" id="nav-dhcp-events">0</span>
+      </a>
+      <a href="#" class="nav-item" data-tab="traffic" onclick="showTab('traffic',this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+        </svg>
+        <span>Traffic Analysis</span>
+        <span class="badge badge-red" id="nav-traffic-anom">0</span>
+      </a>
+      <!-- NEW: Security Engine Tabs -->
+      <div
+        style="padding:.6rem 1rem .2rem;font-size:.65rem;color:#4a5568;text-transform:uppercase;letter-spacing:.1em;margin-top:.5rem">
+        Security Engine</div>
+      <a href="#" class="nav-item" data-tab="rtmonitor" onclick="showTab('rtmonitor',this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        </svg>
+        <span>RT Monitor</span>
+        <span class="badge" id="nav-monitor-count">0</span>
+      </a>
+      <a href="#" class="nav-item" data-tab="attacks" onclick="showTab('attacks',this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+          <line x1="12" y1="9" x2="12" y2="13" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+        <span>Attack Detection</span>
+        <span class="badge badge-red" id="nav-attack-count">0</span>
+      </a>
+      <!-- NEW: Utilities Section -->
+      <div
+        style="padding:.6rem 1rem .2rem;font-size:.65rem;color:#4a5568;text-transform:uppercase;letter-spacing:.1em;margin-top:.5rem">
+        Utilities</div>
+      <a href="#" class="nav-item" data-tab="reports" onclick="showTab('reports',this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
+          <line x1="10" y1="9" x2="10" y2="9" />
+        </svg>
+        <span>Reports</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="status-indicator">
+        <span class="pulse-dot" id="status-dot"></span>
+        <span id="status-text">Connecting...</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <!-- Hamburger toggle (visible on mobile only) -->
+        <button class="hamburger-btn" id="hamburger-btn" onclick="toggleSidebar()" aria-label="Toggle navigation">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+        <h1 class="page-title" id="page-title">Security Overview</h1>
+        <span class="last-updated" id="last-updated">Last updated: —</span>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-scan" id="scan-btn" onclick="triggerScan()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+            <path d="M21 3v5h-5" />
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+            <path d="M8 16H3v5" />
+          </svg>
+          Scan Now
+        </button>
+
+        <button class="btn-reset" id="reset-system-btn" onclick="resetSystem()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          Reset Tool
+        </button>
+
+        <!-- ── GLOBAL INTERFACE SELECTOR ── -->
+        <div class="iface-selector-wrap" id="iface-selector-wrap" onclick="toggleIfaceDropdown()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2" />
+            <path d="M8 21h8M12 17v4" />
+          </svg>
+          <div>
+            <div class="iface-selector-label">Interface</div>
+            <div class="iface-selector-name" id="iface-selected-name">Loading...</div>
+            <div class="iface-selector-ip" id="iface-selected-ip"></div>
+          </div>
+          <div class="iface-dot-up" id="iface-status-dot"></div>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+          <!-- Dropdown -->
+          <div class="iface-dropdown" id="iface-dropdown">
+            <div class="iface-dropdown-header">
+              <span>🔌 Network Interfaces</span>
+              <button class="iface-refresh-btn" onclick="event.stopPropagation(); loadInterfaces()">↺ Refresh</button>
+            </div>
+            <div id="iface-dropdown-list">
+              <div style="padding:1.2rem;color:#4a5568;font-size:.82rem;text-align:center">
+                <span class="iface-loading-spinner"></span> Detecting interfaces...
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="network-info" id="network-info">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+            <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+            <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+            <circle cx="12" cy="20" r="1" />
+          </svg>
+          <span id="network-range">—</span>
+        </div>
+      </div>
+
+    </header>
+
+    <!-- ══════════════ OVERVIEW TAB ══════════════ -->
+    <section class="tab-content active" id="tab-overview">
+      <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-3 mb-4">
+        <div class="stat-card col-12 col-md-6 col-xl-3">
+          <div class="stat-card-inner">
+            <div class="stat-icon stat-icon-blue"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="13" rx="2" />
+                <path d="M8 21h8M12 17v4" />
+              </svg></div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-total-devices">0</div>
+              <div class="stat-label">Total Devices</div>
+            </div>
+          </div>
+          <div class="stat-trend trend-neutral">Total on network</div>
+        </div>
+        <div class="stat-card col-12 col-md-6 col-xl-3">
+          <div class="stat-card-inner">
+            <div class="stat-icon stat-icon-red"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 2 7 2 17 12 22 22 17 22 7 12 2" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg></div>
+            <div class="stat-info">
+              <div class="stat-value stat-red" id="stat-rogue">0</div>
+              <div class="stat-label">Rogue / Unknown</div>
+            </div>
+          </div>
+          <div class="stat-trend trend-danger">Unauthorized devices</div>
+        </div>
+        <div class="stat-card col-12 col-md-6 col-xl-3">
+          <div class="stat-card-inner">
+            <div class="stat-icon stat-icon-orange"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg></div>
+            <div class="stat-info">
+              <div class="stat-value stat-orange" id="stat-alerts">0</div>
+              <div class="stat-label">Total Alerts</div>
+            </div>
+          </div>
+          <div class="stat-trend trend-warning">Active threat events</div>
+        </div>
+        <div class="stat-card col-12 col-md-6 col-xl-3">
+          <div class="stat-card-inner">
+            <div class="stat-icon stat-icon-green"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg></div>
+            <div class="stat-info">
+              <div class="stat-value stat-green" id="stat-whitelisted">0</div>
+              <div class="stat-label">Trusted Devices</div>
+            </div>
+          </div>
+          <div class="stat-trend trend-success">Whitelisted &amp; verified</div>
+        </div>
+      </div>
+      <!-- Overview feature stats row -->
+      <div class="row g-3 mb-4">
+        <div class="feature-stat col-12 col-sm-6 col-lg-3">
+          <div class="feature-stat-icon fsi-purple">🔌</div>
+          <div>
+            <div class="feature-stat-val" id="ov-iot-count">0</div>
+            <div class="feature-stat-label">IoT Profiles</div>
+          </div>
+        </div>
+        <div class="feature-stat col-12 col-sm-6 col-lg-3">
+          <div class="feature-stat-icon fsi-orange">⚠️</div>
+          <div>
+            <div class="feature-stat-val" id="ov-iot-highrisk">0</div>
+            <div class="feature-stat-label">High-Risk IoT</div>
+          </div>
+        </div>
+        <div class="feature-stat col-12 col-sm-6 col-lg-3">
+          <div class="feature-stat-icon fsi-red">🛑</div>
+          <div>
+            <div class="feature-stat-val" id="ov-rogue-dhcp">0</div>
+            <div class="feature-stat-label">Rogue DHCP Servers</div>
+          </div>
+        </div>
+        <div class="feature-stat col-12 col-sm-6 col-lg-3">
+          <div class="feature-stat-icon fsi-cyan">📊</div>
+          <div>
+            <div class="feature-stat-val" id="ov-traffic-anom">0</div>
+            <div class="feature-stat-label">Traffic Anomalies</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-4">
+        <div class="card chart-card col-12 col-xl-8">
+          <div class="card-header">
+            <h3>Alert Timeline</h3><span class="card-badge">Last 20 Scans</span>
+          </div>
+          <div class="chart-container"><canvas id="alertTimelineChart"></canvas></div>
+        </div>
+        <div class="card chart-card chart-card-sm col-12 col-xl-4">
+          <div class="card-header">
+            <h3>Severity Distribution</h3>
+          </div>
+          <div class="chart-container"><canvas id="severityChart"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h3>🚨 Live Alerts Feed</h3><span class="card-badge card-badge-live">LIVE</span>
+        </div>
+        <div class="alerts-feed" id="overview-alerts-feed">
+          <div class="empty-state">No alerts yet — network looks clean ✅</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ DEVICES TAB ══════════════ -->
+    <section class="tab-content" id="tab-devices">
+      <div class="card">
+        <div class="card-header">
+          <h3>Connected Devices</h3>
+          <div class="card-actions">
+            <input type="text" class="search-input" id="device-search" placeholder="Search MAC, IP, Vendor..."
+              onkeyup="filterDevices()" />
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table" id="devices-table">
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>IP Address</th>
+                <th>MAC Address</th>
+                <th>Vendor</th>
+                <th>Hostname</th>
+                <th>Risk Score</th>
+                <th>First Seen</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="devices-tbody">
+              <tr>
+                <td colspan="8" class="empty-state">Loading devices...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ ALERTS TAB ══════════════ -->
+    <section class="tab-content" id="tab-alerts">
+      <div class="card">
+        <div class="card-header">
+          <h3>All Security Alerts</h3>
+          <div class="filter-row">
+            <select class="filter-select" id="severity-filter" onchange="filterAlerts()">
+              <option value="">All Severities</option>
+              <option value="CRITICAL">CRITICAL</option>
+              <option value="HIGH">HIGH</option>
+              <option value="MEDIUM">MEDIUM</option>
+              <option value="LOW">LOW</option>
+            </select>
+            <select class="filter-select" id="type-filter" onchange="filterAlerts()">
+              <option value="">All Types</option>
+              <option value="NEW_UNKNOWN_DEVICE">New Device</option>
+              <option value="ARP_SPOOFING">ARP Spoof</option>
+              <option value="MITM_DETECTED">MITM</option>
+              <option value="MAC_SPOOFING">MAC Spoof</option>
+              <option value="ROGUE_ACCESS_POINT">Rogue AP</option>
+              <option value="PORT_SCAN_DETECTED">Port Scan</option>
+              <option value="IOT_HIGH_RISK_DEVICE">IoT High Risk</option>
+              <option value="ROGUE_DHCP_SERVER">Rogue DHCP</option>
+              <option value="DHCP_STARVATION">DHCP Starvation</option>
+              <option value="TRAFFIC_SPIKE">Traffic Spike</option>
+              <option value="DATA_EXFILTRATION">Data Exfiltration</option>
+            </select>
+          </div>
+        </div>
+        <div class="alerts-list" id="full-alerts-list">
+          <div class="empty-state">Loading alerts...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ WHITELIST TAB ══════════════ -->
+    <section class="tab-content" id="tab-whitelist">
+      <div class="card">
+        <div class="card-header">
+          <h3>🛡️ Trusted Device Whitelist</h3>
+        </div>
+        <form class="whitelist-form" onsubmit="addToWhitelist(event)">
+          <input type="text" id="wl-mac" placeholder="MAC Address (aa:bb:cc:dd:ee:ff)" required
+            pattern="([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}" />
+          <input type="text" id="wl-ip" placeholder="IP Address (e.g. 192.168.1.10)" />
+          <input type="text" id="wl-label" placeholder="Label (e.g. Router, Admin PC)" />
+          <input type="text" id="wl-note" placeholder="Note (optional)" />
+          <button type="submit" class="btn btn-green">+ Add to Whitelist</button>
+        </form>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>MAC Address</th>
+                <th>IP Address</th>
+                <th>Hostname</th>
+                <th>Vendor</th>
+                <th>Risk Score</th>
+                <th>Label</th>
+                <th>Note</th>
+                <th>Added</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="whitelist-tbody">
+              <tr>
+                <td colspan="9" class="empty-state">No trusted devices yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ SCANNER TAB ══════════════ -->
+    <section class="tab-content" id="tab-scanner">
+      <div class="card scanner-card">
+        <div class="card-header">
+          <h3>🔍 Network Scanner</h3>
+        </div>
+        <div class="scanner-controls">
+          <div class="scanner-status" id="scan-status-display">
+            <div class="scan-ring" id="scan-ring"></div>
+            <span id="scan-status-text">Ready to scan</span>
+          </div>
+          <button class="btn btn-scan btn-lg" onclick="triggerScan()" id="scanner-btn">Launch Scan</button>
+        </div>
+        <div class="card" id="scan-results-card" style="display:none;margin-top:1.5rem;">
+          <div class="card-header">
+            <h3>Scan Results</h3>
+          </div>
+          <div id="scan-results-content" class="scan-results"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ IoT PROFILER TAB ══════════════ -->
+    <section class="tab-content" id="tab-iot">
+      <div class="row g-3 mb-4" style="margin-bottom:1.5rem">
+        <div class="feature-stat col-12 col-sm-6 col-lg-3">
+          <div class="feature-stat-icon fsi-purple">🔌</div>
+          <div>
+            <div class="feature-stat-val" id="iot-total">0</div>
+            <div class="feature-stat-label">Total IoT Profiles</div>
+          </div>
+        </div>
+        <div class="feature-stat col-12 col-sm-6 col-lg-3">
+          <div class="feature-stat-icon fsi-red">🔴</div>
+          <div>
+            <div class="feature-stat-val" id="iot-critical">0</div>
+            <div class="feature-stat-label">Critical Risk</div>
+          </div>
+        </div>
+        <div class="feature-stat col-12 col-sm-6 col-lg-3">
+          <div class="feature-stat-icon fsi-orange">⚠️</div>
+          <div>
+            <div class="feature-stat-val" id="iot-high">0</div>
+            <div class="feature-stat-label">High Risk</div>
+          </div>
+        </div>
+        <div class="feature-stat col-12 col-sm-6 col-lg-3">
+          <div class="feature-stat-icon fsi-cyan">🛡️</div>
+          <div>
+            <div class="feature-stat-val" id="iot-cves">0</div>
+            <div class="feature-stat-label">CVE Indicators</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>🔌 IoT Device Profiles &amp; Risk Assessment</h3>
+          <div class="card-header-actions">
+            <div style="display:flex;align-items:center;gap:.4rem">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2" />
+                <path d="M8 21h8M12 17v4" />
+              </svg>
+              <select class="iface-inline-select" id="iot-iface-select"
+                title="Interface for IoT profiling bind"></select>
+            </div>
+            <span id="iot-scan-indicator" style="font-size:.78rem;color:#7a8499"></span>
+            <button class="btn btn-scan" id="iot-scan-btn" onclick="triggerIoTScan()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M12 2v3m0 14v3M2 12h3m14 0h3" />
+              </svg>
+              Profile IoT Devices
+            </button>
+          </div>
+        </div>
+
+        <div id="iot-profiles-list">
+          <div class="empty-state">No IoT profiles yet. Click "Profile IoT Devices" to scan.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ DHCP MONITOR TAB ══════════════ -->
+    <section class="tab-content" id="tab-dhcp">
+      <div class="row g-3 mb-4" style="margin-bottom:1.5rem">
+        <div class="feature-stat col-12 col-sm-6 col-lg-3">
+          <div class="feature-stat-icon fsi-cyan">📡</div>
+          <div>
+            <div class="feature-stat-val" id="dhcp-discovers">0</div>
+            <div class="feature-stat-label">DISCOVER Packets</div>
+          </div>
+        </div>
+        <div class="feature-stat col-12 col-sm-6 col-lg-3">
+          <div class="feature-stat-icon fsi-orange">📋</div>
+          <div>
+            <div class="feature-stat-val" id="dhcp-acks">0</div>
+            <div class="feature-stat-label">ACK Packets</div>
+          </div>
+        </div>
+        <div class="feature-stat col-12 col-sm-6 col-lg-3">
+          <div class="feature-stat-icon fsi-red">🚨</div>
+          <div>
+            <div class="feature-stat-val" id="dhcp-rogue">0</div>
+            <div class="feature-stat-label">Rogue Servers</div>
+          </div>
+        </div>
+        <div class="feature-stat col-12 col-sm-6 col-lg-3">
+          <div class="feature-stat-icon fsi-red">💥</div>
+          <div>
+            <div class="feature-stat-val" id="dhcp-starvation">0</div>
+            <div class="feature-stat-label">Starvation Events</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <!-- DHCP Events -->
+        <div class="card col-12 col-lg-6">
+          <div class="card-header">
+            <h3>📡 DHCP Security Events</h3>
+            <div class="card-header-actions">
+              <div style="display:flex;align-items:center;gap:.4rem">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2">
+                  <rect x="2" y="3" width="20" height="14" rx="2" />
+                  <path d="M8 21h8M12 17v4" />
+                </svg>
+                <select class="iface-inline-select" id="dhcp-iface-select" title="DHCP Monitor interface"></select>
+              </div>
+              <button id="dhcp-toggle-btn" class="toggle-btn stopped" onclick="toggleDHCP()">▶ Start Monitor</button>
+            </div>
+          </div>
+          <div id="dhcp-events-list" style="max-height:400px;overflow-y:auto">
+            <div class="empty-state">Start DHCP monitor to capture packets.</div>
+          </div>
+        </div>
+        <!-- DHCP Lease Table -->
+        <div class="card">
+          <div class="card-header">
+            <h3>🗂️ Active DHCP Leases</h3>
+            <span class="card-badge" id="dhcp-lease-count">0 leases</span>
+          </div>
+          <div style="padding:.5rem 0">
+            <div
+              style="display:flex;gap:1rem;padding:.4rem 1rem;font-size:.7rem;color:#4a5568;font-weight:600;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #1e2430">
+              <span style="width:160px">MAC Address</span>
+              <span style="width:120px">Assigned IP</span>
+              <span>DHCP Server</span>
+            </div>
+            <div id="dhcp-leases-list" style="max-height:380px;overflow-y:auto">
+              <div class="empty-state">No leases captured yet.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ TRAFFIC ANALYSIS TAB ══════════════ -->
+    <section class="tab-content" id="tab-traffic">
+      <div class="row g-3 mb-4" style="margin-bottom:1.5rem">
+        <div class="feature-stat col-12 col-sm-6 col-lg-3">
+          <div class="feature-stat-icon fsi-cyan">📦</div>
+          <div>
+            <div class="feature-stat-val" id="tr-passive">0</div>
+            <div class="feature-stat-label">Packets Captured</div>
+          </div>
+        </div>
+        <div class="feature-stat col-12 col-sm-6 col-lg-3">
+          <div class="feature-stat-icon fsi-purple">🌊</div>
+          <div>
+            <div class="feature-stat-val" id="tr-netflow">0</div>
+            <div class="feature-stat-label">NetFlow Records</div>
+          </div>
+        </div>
+        <div class="feature-stat col-12 col-sm-6 col-lg-3">
+          <div class="feature-stat-icon fsi-orange">⚠️</div>
+          <div>
+            <div class="feature-stat-val" id="tr-anomalies">0</div>
+            <div class="feature-stat-label">Anomalies</div>
+          </div>
+        </div>
+        <div class="feature-stat col-12 col-sm-6 col-lg-3">
+          <div class="feature-stat-icon fsi-red">💀</div>
+          <div>
+            <div class="feature-stat-val" id="tr-ddos">0</div>
+            <div class="feature-stat-label">DDoS Events</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <!-- Top Talkers -->
+        <div class="card col-12 col-lg-6">
+          <div class="card-header">
+            <h3>📊 Traffic Analyzer</h3>
+            <div class="card-header-actions">
+              <div style="display:flex;align-items:center;gap:.4rem">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2">
+                  <rect x="2" y="3" width="20" height="14" rx="2" />
+                  <path d="M8 21h8M12 17v4" />
+                </svg>
+                <select class="iface-inline-select" id="traffic-iface-select"
+                  title="Traffic Analyzer interface"></select>
+              </div>
+              <button id="traffic-toggle-btn" class="toggle-btn stopped" onclick="toggleTraffic()">▶ Start
+                Analyzer</button>
+            </div>
+          </div>
+          <div id="top-talkers-list" style="padding:1rem;display:flex;flex-direction:column;gap:.7rem">
+            <div class="empty-state">Start Traffic Analyzer to see flows.</div>
+          </div>
+        </div>
+        <!-- Anomalies -->
+        <div class="card">
+          <div class="card-header">
+            <h3>🚨 Detected Anomalies</h3>
+            <span class="card-badge card-badge-live">LIVE</span>
+          </div>
+          <div id="traffic-anomalies-list" style="max-height:400px;overflow-y:auto">
+            <div class="empty-state">No anomalies detected.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Flows -->
+      <div class="card" style="margin-top:1.2rem">
+        <div class="card-header">
+          <h3>🔀 Recent Flow Records</h3>
+          <span class="card-badge" id="flow-count-badge">0 flows</span>
+        </div>
+        <div style="overflow-x:auto">
+          <div class="flow-row header">
+            <span>Src IP</span><span>Dst IP</span><span>Dst Port</span><span>Proto</span><span>Bytes</span><span>Age
+              (s)</span>
+          </div>
+          <div id="flows-list" style="max-height:280px;overflow-y:auto">
+            <div class="empty-state">No flows captured yet.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ REAL-TIME MONITOR TAB ══════════════ -->
+    <section class="tab-content" id="tab-rtmonitor">
+      <!-- Stats row -->
+      <div class="row g-3 mb-4" style="margin-bottom:1.5rem">
+        <div class="feature-stat col-12 col-sm-6 col-lg-3">
+          <div class="feature-stat-icon fsi-cyan">🛡️</div>
+          <div>
+            <div class="feature-stat-val" id="mon-device-count">0</div>
+            <div class="feature-stat-label">Monitored Devices</div>
+          </div>
+        </div>
+        <div class="feature-stat col-12 col-sm-6 col-lg-3">
+          <div class="feature-stat-icon fsi-green">🔄</div>
+          <div>
+            <div class="feature-stat-val" id="mon-scan-count">0</div>
+            <div class="feature-stat-label">Scans Completed</div>
+          </div>
+        </div>
+        <div class="feature-stat col-12 col-sm-6 col-lg-3">
+          <div class="feature-stat-icon fsi-orange">⚠️</div>
+          <div>
+            <div class="feature-stat-val" id="mon-alerts-fired">0</div>
+            <div class="feature-stat-label">Alerts Fired</div>
+          </div>
+        </div>
+        <div class="feature-stat col-12 col-sm-6 col-lg-3">
+          <div class="feature-stat-icon fsi-purple">🔗</div>
+          <div>
+            <div class="feature-stat-val" id="mon-corr-count">0</div>
+            <div class="feature-stat-label">Correlation Events</div>
+          </div>
+        </div>
+      </div>
+      <div class="row g-3">
+        <!-- Live Device Table -->
+        <div class="card col-12 col-xl-8">
+          <div class="card-header">
+            <h3>🛡️ Live Network Device Map</h3>
+            <div class="card-header-actions">
+              <select class="iface-inline-select" id="mon-iface-select" title="Monitor interface"></select>
+              <button id="mon-toggle-btn" class="toggle-btn stopped" onclick="toggleMonitor()">▶ Start Monitor</button>
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:.8rem">
+              <thead>
+                <tr
+                  style="border-bottom:1px solid #1e2430;color:#4a5568;font-size:.7rem;text-transform:uppercase;letter-spacing:.04em">
+                  <th style="padding:.6rem .8rem;text-align:left">IP Address</th>
+                  <th style="padding:.6rem .8rem;text-align:left">MAC Address</th>
+                  <th style="padding:.6rem .8rem;text-align:left">Vendor</th>
+                  <th style="padding:.6rem .8rem;text-align:left">Hostname</th>
+                  <th style="padding:.6rem .8rem;text-align:left">Risk</th>
+                  <th style="padding:.6rem .8rem;text-align:left">First Seen</th>
+                  <th style="padding:.6rem .8rem;text-align:left">Status</th>
+                </tr>
+              </thead>
+              <tbody id="mon-device-tbody">
+                <tr>
+                  <td colspan="7" style="padding:2rem;text-align:center;color:#4a5568">
+                    Start monitor to see live device map…
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <!-- Right column: AP Status + Correlation Feed -->
+        <div style="display:flex;flex-direction:column;gap:1.2rem">
+          <!-- Rogue AP Status -->
+          <div class="card">
+            <div class="card-header">
+              <h3>📡 Rogue AP Detection</h3>
+              <span class="card-badge" id="mon-ap-badge">–</span>
+            </div>
+            <div id="mon-ap-list" style="padding:.8rem;font-size:.8rem">
+              <div class="empty-state">Start monitor (AP scan enabled) to see results.</div>
+            </div>
+          </div>
+          <!-- Correlation Events Feed -->
+          <div class="card" style="flex:1">
+            <div class="card-header">
+              <h3>🔗 Correlation Engine</h3>
+              <span class="card-badge card-badge-live">LIVE</span>
+            </div>
+            <div id="mon-corr-list" style="max-height:340px;overflow-y:auto;font-size:.78rem">
+              <div class="empty-state">No correlation events yet.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ ATTACK DETECTION TAB ══════════════ -->
+    <section class="tab-content" id="tab-attacks">
+      <!-- Attack type counters -->
+      <div class="row g-3 mb-4" style="margin-bottom:1.5rem">
+        <div class="feature-stat col-12 col-sm-6 col-lg-3">
+          <div class="feature-stat-icon fsi-red">🕵️</div>
+          <div>
+            <div class="feature-stat-val" id="atk-mitm">0</div>
+            <div class="feature-stat-label">MITM Detected</div>
+          </div>
+        </div>
+        <div class="feature-stat col-12 col-sm-6 col-lg-3">
+          <div class="feature-stat-icon fsi-orange">💣</div>
+          <div>
+            <div class="feature-stat-val" id="atk-ddos">0</div>
+            <div class="feature-stat-label">DDoS Events</div>
+          </div>
+        </div>
+        <div class="feature-stat col-12 col-sm-6 col-lg-3">
+          <div class="feature-stat-icon fsi-purple">🌊</div>
+          <div>
+            <div class="feature-stat-val" id="atk-floods">0</div>
+            <div class="feature-stat-label">SYN/ICMP/UDP Floods</div>
+          </div>
+        </div>
+        <div class="feature-stat col-12 col-sm-6 col-lg-3">
+          <div class="feature-stat-icon fsi-cyan">🧠</div>
+          <div>
+            <div class="feature-stat-val" id="atk-behavioral">0</div>
+            <div class="feature-stat-label">Behavioral Anomalies</div>
+          </div>
+        </div>
+        <div class="feature-stat col-12 col-sm-6 col-lg-3">
+          <div class="feature-stat-icon fsi-red">☣️</div>
+          <div>
+            <div class="feature-stat-val" id="atk-ioc">0</div>
+            <div class="feature-stat-label">IOC Threat Matches</div>
+          </div>
+        </div>
+        <div class="feature-stat col-12 col-sm-6 col-lg-3">
+          <div class="feature-stat-icon fsi-orange">🔮</div>
+          <div>
+            <div class="feature-stat-val" id="atk-predictive">0</div>
+            <div class="feature-stat-label">Predictive Pre-Alerts</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="responsive-grid-sidebar-sm">
+        <!-- Attack Event Feed -->
+        <div class="card">
+          <div class="card-header">
+            <h3>⚔️ Live Attack Events</h3>
+            <div class="card-header-actions">
+              <select class="iface-inline-select" id="atk-iface-select" title="Detection interface"></select>
+              <button id="atk-toggle-btn" class="toggle-btn stopped" onclick="toggleAttackDetector()">▶ Start
+                Detector</button>
+            </div>
+          </div>
+          <div id="atk-events-list" style="max-height:520px;overflow-y:auto">
+            <div class="empty-state">Start attack detector to see live events.</div>
+          </div>
+        </div>
+        <!-- Right: IOC + Multi-layer correlation -->
+        <div style="display:flex;flex-direction:column;gap:1.2rem">
+          <!-- Multi-layer stats -->
+          <div class="card">
+            <div class="card-header">
+              <h3>🔄 Multi-Layer Correlation</h3>
+              <span class="card-badge card-badge-live">AUTO</span>
+            </div>
+            <div style="padding:.8rem;font-size:.8rem">
+              <div style="display:flex;justify-content:space-between;margin-bottom:.5rem">
+                <span style="color:#4a5568">Correlated Events</span>
+                <span id="atk-correlated" style="color:#22d3ee;font-weight:600">0</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:.5rem">
+                <span style="color:#4a5568">Pkts Analysed</span>
+                <span id="atk-pkts" style="color:#a0aec0;font-weight:600">0</span>
+              </div>
+              <div style="display:flex;justify-content:space-between">
+                <span style="color:#4a5568">Uptime</span>
+                <span id="atk-uptime" style="color:#a0aec0;font-weight:600">—</span>
+              </div>
+            </div>
+          </div>
+          <!-- Threat Intelligence IOC List -->
+          <div class="card" style="flex:1">
+            <div class="card-header">
+              <h3>☣️ Threat Intelligence Matches</h3>
+              <span class="card-badge" id="atk-ioc-badge">0 IOCs</span>
+            </div>
+            <div id="atk-ioc-list" style="max-height:320px;overflow-y:auto;font-size:.78rem">
+              <div class="empty-state">No IOC matches detected.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ WI-FI SECURITY TAB ══════════════ -->
+    <section class="tab-content" id="tab-wifi_sec">
+      <div class="row g-3">
+        <div class="card">
+          <div class="card-header">
+            <h3>📡 AI Wi-Fi Scanner (Evil Twin)</h3>
+          </div>
+          <div class="scanner-controls" style="padding-top:1rem; padding-bottom:1rem;">
+            <div class="scanner-status" id="wifi-scan-status-display">
+              <div class="scan-ring" id="wifi-scan-ring"
+                style="display:none; width: 12px; height: 12px; border-width: 2px;"></div>
+              <span id="wifi-scan-status-text">Ready to scan area</span>
+            </div>
+            <button class="btn btn-scan btn-lg" onclick="triggerWifiScan()" id="wifi-scanner-btn">Launch AI
+              Scan</button>
+          </div>
+
+          <div id="wifi-scan-results-content" style="display:none; margin-top:1rem;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:1rem;">
+              <span class="badge" id="wifi-total-aps">0 APs</span>
+              <span class="badge badge-red" id="wifi-evil-twins">0 Rogue</span>
+            </div>
+            <div class="table-wrapper">
+              <table class="data-table" id="wifi-table" style="font-size:0.8rem;">
+                <thead>
+                  <tr>
+                    <th>SSID</th>
+                    <th>BSSID(s)</th>
+                    <th>Security</th>
+                    <th>Risk</th>
+                  </tr>
+                </thead>
+                <tbody id="wifi-tbody">
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3>🛡️ SSID Allowlist</h3>
+          </div>
+          <form class="whitelist-form" onsubmit="addWifiAllowlist(event)">
+            <input type="text" id="wa-ssid" placeholder="Trusted SSID Name" required />
+            <button type="submit" class="btn btn-green">+ Allow SSID</button>
+          </form>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>SSID Name</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="wifi-allowlist-tbody">
+                <tr>
+                  <td colspan="2" class="empty-state">No trusted SSIDs yet.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ REPORTS TAB ══════════════ -->
+    <section class="tab-content" id="tab-reports">
+      <div class="card" style="max-width: 600px; margin: 0 auto; text-align: center; padding: 3rem 2rem;">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="1.5"
+          style="margin-bottom: 1rem;">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
+          <line x1="10" y1="9" x2="10" y2="9" />
+        </svg>
+        <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem; color: #e2e8f0;">Network Security Reports</h2>
+        <p style="color: #a0aec0; font-size: 0.95rem; line-height: 1.5; margin-bottom: 2rem;">
+          Generate comprehensive audit reports detailing your network's current threat landscape.
+          Reports include Executive Summaries, Device Inventories, IoT Profiling results, and Recent Security Alerts.
+        </p>
+
+        <div
+          style="display: flex; gap: 1rem; align-items: center; justify-content: center; margin-bottom: 2rem; max-width: 450px; margin-left: auto; margin-right: auto; flex-wrap: wrap;">
+          <select id="report-format-select"
+            style="padding: 0.8rem 1rem; border-radius: 6px; background: #1e2430; color: #e8edf5; border: 1px solid #2a3140; font-family: 'Inter', sans-serif; font-size: 0.95rem; cursor: pointer; flex: 1; min-width: 150px;">
+            <option value="docx">DOCX (Word)</option>
+            <option value="txt">TXT (Plain Text)</option>
+            <option value="csv">CSV (Spreadsheet)</option>
+            <option value="html">HTML (Web Page)</option>
+            <option value="json">JSON (Data)</option>
+          </select>
+          <button id="btn-generate-report" onclick="generateReport()"
+            style="background: #2563eb; color: #fff; font-weight: 600; font-size: 1.05rem; padding: 0.8rem 1.5rem; display: inline-flex; align-items: center; justify-content: center; flex: 2; min-width: 200px; gap: 0.5rem; border: none; border-radius: 6px; cursor: pointer; transition: background 0.2s;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span id="btn-generate-report-text">Generate Report</span>
+          </button>
+        </div>
+
+        <div id="report-toast-msg" style="margin-top: 1.5rem; font-size: 0.85rem; color: #4ade80; display: none;">
+          ✓ Report generated and downloaded successfully.
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+
+  <!-- DEVICE DETAIL MODAL -->
+  <div class="modal-overlay" id="modal-overlay" onclick="closeModal()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Device Details</h3>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATIONS -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="/static/js/main.js"></script>
+  <script>
+    // ════════════════════════════════════════════════════════════
+    //  NEW FEATURE JS — IoT, DHCP, Traffic Analysis
+    // ════════════════════════════════════════════════════════════
+
+    // ── IoT Profiler ──────────────────────────────────────────
+
+    let iotScanRunning = false;
+
+    function triggerIoTScan() {
+      if (iotScanRunning) return;
+      document.getElementById('iot-scan-btn').disabled = true;
+      document.getElementById('iot-scan-indicator').innerHTML =
+        '<span class="scan-ring-sm"></span> Scanning...';
+      iotScanRunning = true;
+      fetch('/api/iot/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+        .then(r => r.json()).then(d => {
+          toast('IoT profiling scan started!', 'info');
+          pollIoTStatus();
+        }).catch(e => {
+          toast('IoT scan error: ' + e, 'error');
+          document.getElementById('iot-scan-btn').disabled = false;
+          document.getElementById('iot-scan-indicator').textContent = '';
+          iotScanRunning = false;
+        });
+    }
+
+    function pollIoTStatus() {
+      fetch('/api/iot/status').then(r => r.json()).then(d => {
+        if (d.running) {
+          setTimeout(pollIoTStatus, 3000);
+        } else {
+          document.getElementById('iot-scan-btn').disabled = false;
+          document.getElementById('iot-scan-indicator').textContent = `Last scan: ${d.last_count} profiles`;
+          iotScanRunning = false;
+          loadIoTProfiles();
+        }
+      }).catch(() => { iotScanRunning = false; });
+    }
+
+    function loadIoTProfiles() {
+      fetch('/api/iot/profiles').then(r => r.json()).then(d => {
+        const profiles = d.profiles || [];
+        document.getElementById('iot-total').textContent = profiles.length;
+        document.getElementById('nav-iot-count').textContent = profiles.length;
+        const crit = profiles.filter(p => p.iot_risk_score >= 80).length;
+        const high = profiles.filter(p => p.iot_risk_score >= 60 && p.iot_risk_score < 80).length;
+        let totalCves = 0;
+        profiles.forEach(p => {
+          totalCves += (p.cve_count || (Array.isArray(p.cve_indicators) ? p.cve_indicators.length : 0));
+        });
+        document.getElementById('iot-critical').textContent = crit;
+        document.getElementById('iot-high').textContent = high;
+        document.getElementById('iot-cves').textContent = totalCves;
+        document.getElementById('ov-iot-count').textContent = profiles.length;
+        document.getElementById('ov-iot-highrisk').textContent = crit + high;
+
+        const container = document.getElementById('iot-profiles-list');
+        if (!profiles.length) {
+          container.innerHTML = '<div class="empty-state">No IoT profiles yet. Click "Profile IoT Devices" to scan.</div>';
+          return;
+        }
+        container.innerHTML = profiles.map(p => {
+          const sev = p.severity || (p.iot_risk_score >= 80 ? 'CRITICAL' : p.iot_risk_score >= 60 ? 'HIGH' : p.iot_risk_score >= 40 ? 'MEDIUM' : 'LOW');
+          const score = p.iot_risk_score || 0;
+          const cveList = Array.isArray(p.cve_indicators) ? p.cve_indicators : [];
+          const portsObj = p.open_iot_ports || {};
+          const portKeys = Object.keys(portsObj);
+          const portHtml = portKeys.length
+            ? portKeys.map(port => {
+              const ri = typeof portsObj[port] === 'object' ? portsObj[port].risk || 0 : 0;
+              return `<span class="port-chip ${ri >= 30 ? 'danger' : ''}">${port}/${typeof portsObj[port] === 'object' ? portsObj[port].service : portsObj[port]}</span>`;
+            }).join('')
+            : '<span style="color:#4a5568;font-size:.72rem">None detected</span>';
+          const portsStr = typeof p.open_iot_ports === 'string' ? p.open_iot_ports : '';
+          return `<div class="iot-profile-row">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.3rem">
+              <span style="font-weight:600;color:#e8edf5">${p.ip || '—'}</span>
+              <span style="color:#4a5568;font-size:.75rem;font-family:'JetBrains Mono',monospace">${p.mac || ''}</span>
+              <span class="iot-type-chip">${p.device_type || 'Unknown'}</span>
+              <span style="font-size:.7rem;padding:.15rem .4rem;border-radius:4px;background:rgba(139,92,246,.15);color:#a78bfa">${p.category || ''}</span>
+            </div>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+              <span class="port-row">${portsStr || portHtml}</span>
+              ${cveList.length ? `<span class="cve-badge cve-${sev}">⚠ ${cveList.length} CVE indicator${cveList.length > 1 ? 's' : ''}</span>` : ''}
+              <span style="font-size:.7rem;color:#4a5568">${p.profiled_at ? p.profiled_at.slice(0, 16).replace('T', ' ') : ''}</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:.8rem;flex-shrink:0">
+            <div>
+              <div class="risk-meter"><div class="risk-fill ${sev}" style="width:${score}%"></div></div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:1.2rem;font-weight:700;color:${sev === 'CRITICAL' ? '#ef4444' : sev === 'HIGH' ? '#fb7185' : sev === 'MEDIUM' ? '#fb923c' : '#22c55e'}">${score}</div>
+              <span class="cve-badge cve-${sev}">${sev}</span>
+            </div>
+          </div>
+        </div>`;
+        }).join('');
+      }).catch(e => console.error('IoT profiles error:', e));
+    }
+
+    // ── DHCP Monitor ──────────────────────────────────────────
+
+    window.dhcpRunning = false;
+
+    function toggleDHCP() {
+      const btn = document.getElementById('dhcp-toggle-btn');
+      if (window.dhcpRunning) {
+        fetch('/api/dhcp/stop', { method: 'POST' }).then(() => {
+          window.dhcpRunning = false;
+          btn.textContent = '▶ Start Monitor';
+          btn.className = 'toggle-btn stopped';
+          toast('DHCP Monitor stopped.', 'info');
+        });
+      } else {
+        fetch('/api/dhcp/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+          .then(r => r.json()).then(d => {
+            window.dhcpRunning = true;
+            btn.innerHTML = '⏹ Stop Monitor';
+            btn.className = 'toggle-btn running';
+            toast('DHCP Monitor started! Sniffing traffic...', 'success');
+          });
+      }
+    }
+
+    function loadDHCPData() {
+      // Stats
+      fetch('/api/dhcp/stats').then(r => r.json()).then(d => {
+        const s = d.stats || {};
+        document.getElementById('dhcp-discovers').textContent = s.total_discover || 0;
+        document.getElementById('dhcp-acks').textContent = s.total_ack || 0;
+        document.getElementById('dhcp-rogue').textContent = s.rogue_servers_detected || 0;
+        document.getElementById('dhcp-starvation').textContent = s.starvation_events || 0;
+        document.getElementById('ov-rogue-dhcp').textContent = s.rogue_servers_detected || 0;
+      }).catch(() => { });
+
+      // Status
+      fetch('/api/dhcp/status').then(r => r.json()).then(d => {
+        window.dhcpRunning = d.running;
+        const btn = document.getElementById('dhcp-toggle-btn');
+        if (d.running) {
+          btn.innerHTML = '⏹ Stop Monitor'; btn.className = 'toggle-btn running';
+        } else {
+          btn.innerHTML = '▶ Start Monitor'; btn.className = 'toggle-btn stopped';
+        }
+      }).catch(() => { });
+
+      // Events
+      fetch('/api/dhcp/events?limit=80').then(r => r.json()).then(d => {
+        const events = d.events || [];
+        document.getElementById('nav-dhcp-events').textContent = events.length;
+        const list = document.getElementById('dhcp-events-list');
+        if (!events.length) {
+          list.innerHTML = '<div class="empty-state">Start DHCP monitor to capture packets.</div>';
+          return;
+        }
+        list.innerHTML = events.map(ev => {
+          const mt = ev.msg_type || 'UNKNOWN';
+          const badgeCls = mt.startsWith('ROGUE') ? 'dhcp-ROGUE' :
+            `dhcp-${mt}`;
+          return `<div class="dhcp-event-row">
+          <span class="dhcp-badge ${badgeCls}">${mt}</span>
+          <span style="font-family:'JetBrains Mono',monospace;color:#60a5fa;font-size:.78rem">${ev.client_mac || '—'}</span>
+          <span style="color:#22d3ee;font-size:.78rem">${ev.offered_ip || ev.client_ip || '—'}</span>
+          ${ev.server_ip ? `<span style="color:#fb923c;font-size:.72rem">via ${ev.server_ip}</span>` : ''}
+          <span style="color:#4a5568;font-size:.7rem;margin-left:auto">${(ev.timestamp || '').slice(11, 19)}</span>
+        </div>`;
+        }).join('');
+      }).catch(() => { });
+
+      // Leases
+      fetch('/api/dhcp/leases').then(r => r.json()).then(d => {
+        const leases = d.leases || {};
+        const macs = Object.keys(leases);
+        document.getElementById('dhcp-lease-count').textContent = `${macs.length} leases`;
+        const list = document.getElementById('dhcp-leases-list');
+        if (!macs.length) {
+          list.innerHTML = '<div class="empty-state">No leases captured yet.</div>';
+          return;
+        }
+        list.innerHTML = macs.map(mac => {
+          const l = leases[mac];
+          return `<div class="lease-row">
+          <span class="lease-mac">${mac}</span>
+          <span class="lease-ip">${l.ip}</span>
+          <span class="lease-server">${l.server_ip || '—'}</span>
+        </div>`;
+        }).join('');
+      }).catch(() => { });
+    }
+
+    // ── Traffic Analysis ──────────────────────────────────────
+
+    window.trafficRunning = false;
+
+    function toggleTraffic() {
+      const btn = document.getElementById('traffic-toggle-btn');
+      if (window.trafficRunning) {
+        fetch('/api/traffic/stop', { method: 'POST' }).then(() => {
+          window.trafficRunning = false;
+          btn.textContent = '▶ Start Analyzer';
+          btn.className = 'toggle-btn stopped';
+          toast('Traffic Analyzer stopped.', 'info');
+        });
+      } else {
+        fetch('/api/traffic/start', { method: 'POST' }).then(r => r.json()).then(d => {
+          window.trafficRunning = true;
+          btn.innerHTML = '⏹ Stop Analyzer';
+          btn.className = 'toggle-btn running';
+          toast('Traffic Analyzer started (NetFlow + sFlow + Passive)!', 'success');
+        });
+      }
+    }
+
+    function fmtBytes(b) {
+      if (b >= 1073741824) return (b / 1073741824).toFixed(2) + ' GB';
+      if (b >= 1048576) return (b / 1048576).toFixed(2) + ' MB';
+      if (b >= 1024) return (b / 1024).toFixed(1) + ' KB';
+      return b + ' B';
+    }
+
+    function loadTrafficData() {
+      // Status & Stats
+      fetch('/api/traffic/status').then(r => r.json()).then(d => {
+        window.trafficRunning = d.running;
+        const btn = document.getElementById('traffic-toggle-btn');
+        if (d.running) { btn.innerHTML = '⏹ Stop Analyzer'; btn.className = 'toggle-btn running'; }
+        else { btn.innerHTML = '▶ Start Analyzer'; btn.className = 'toggle-btn stopped'; }
+        const stats = d.stats || {};
+        document.getElementById('tr-passive').textContent = (stats.passive_packets || 0).toLocaleString();
+        document.getElementById('tr-netflow').textContent = ((stats.netflow_v5_records || 0) + (stats.netflow_v9_records || 0)).toLocaleString();
+      }).catch(() => { });
+
+      // Anomalies
+      fetch('/api/traffic/anomalies?limit=50').then(r => r.json()).then(d => {
+        const anom = d.anomalies || [];
+        const ddos = anom.filter(a => a.type === 'DDOS_DETECTED').length;
+        document.getElementById('tr-anomalies').textContent = anom.length;
+        document.getElementById('tr-ddos').textContent = ddos;
+        document.getElementById('nav-traffic-anom').textContent = anom.length;
+        document.getElementById('ov-traffic-anom').textContent = anom.length;
+
+        const list = document.getElementById('traffic-anomalies-list');
+        if (!anom.length) {
+          list.innerHTML = '<div class="empty-state">No anomalies detected.</div>';
+          return;
+        }
+        list.innerHTML = anom.map(a => `<div class="anomaly-item severity-${a.severity}">
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <span class="anomaly-type">${a.type}</span>
+          <span class="cve-badge cve-${a.severity}">${a.severity}</span>
+        </div>
+        <div class="anomaly-detail">${(a.detail || '').slice(0, 120)}${a.detail && a.detail.length > 120 ? '...' : ''}</div>
+        <div class="anomaly-meta">${a.src_ip || ''} · ${(a.timestamp || '').slice(11, 19)}</div>
+      </div>`).join('');
+      }).catch(() => { });
+
+      // Top Talkers
+      fetch('/api/traffic/top-talkers?n=10').then(r => r.json()).then(d => {
+        const talkers = d.top_talkers || [];
+        const list = document.getElementById('top-talkers-list');
+        if (!talkers.length) {
+          list.innerHTML = '<div class="empty-state">Start Traffic Analyzer to see flows.</div>';
+          return;
+        }
+        const maxBytes = Math.max(...talkers.map(t => t.bytes_out || 1), 1);
+        list.innerHTML = talkers.map(t => {
+          const pct = ((t.bytes_out || 0) / maxBytes * 100).toFixed(1);
+          const hue = pct > 70 ? '#ef4444' : pct > 40 ? '#fb923c' : '#22d3ee';
+          return `<div class="traffic-bar-container">
+          <span class="traffic-bar-label">${t.ip}</span>
+          <div class="traffic-bar-wrap"><div class="traffic-bar-fill" style="width:${pct}%;background:${hue}"></div></div>
+          <span class="traffic-bar-val">${fmtBytes(t.bytes_out || 0)} ↑</span>
+        </div>`;
+        }).join('');
+      }).catch(() => { });
+
+      // Flows
+      fetch('/api/traffic/flows?limit=50').then(r => r.json()).then(d => {
+        const flows = d.flows || [];
+        document.getElementById('flow-count-badge').textContent = `${flows.length} flows`;
+        const list = document.getElementById('flows-list');
+        if (!flows.length) {
+          list.innerHTML = '<div class="empty-state">No flows captured yet.</div>';
+          return;
+        }
+        list.innerHTML = flows.map(f => {
+          const pc = f.protocol === 'TCP' ? 'proto-tcp' : f.protocol === 'UDP' ? 'proto-udp' : f.protocol === 'ICMP' ? 'proto-icmp' : 'proto-other';
+          return `<div class="flow-row">
+          <span style="color:#60a5fa;font-family:'JetBrains Mono',monospace;font-size:.75rem">${f.src_ip}</span>
+          <span style="color:#a0aec0;font-family:'JetBrains Mono',monospace;font-size:.75rem">${f.dst_ip}</span>
+          <span style="color:#7a8499">${f.dst_port || '—'}</span>
+          <span class="${pc}">${f.protocol}</span>
+          <span style="color:#22d3ee">${fmtBytes(f.bytes)}</span>
+          <span style="color:#4a5568">${f.age_secs}s</span>
+        </div>`;
+        }).join('');
+      }).catch(() => { });
+    }
+
+    // ── Global polling ────────────────────────────────────────
+
+    function refreshNewFeatures() {
+      const tab = document.querySelector('.nav-item.active')?.dataset?.tab;
+      if (tab === 'iot') { loadIoTProfiles(); }
+      if (tab === 'dhcp') { loadDHCPData(); }
+      if (tab === 'traffic') { loadTrafficData(); }
+      // Always update overview stats
+      loadIoTProfiles();
+      loadDHCPData();
+      fetch('/api/traffic/anomalies?limit=5').then(r => r.json()).then(d => {
+        document.getElementById('ov-traffic-anom').textContent = d.count || 0;
+        document.getElementById('nav-traffic-anom').textContent = d.count || 0;
+      }).catch(() => { });
+    }
+
+    // Inject toast helper if not defined by main.js
+    if (typeof toast === 'undefined') {
+      window.toast = function (msg, type) {
+        const el = document.createElement('div');
+        el.className = 'toast toast-' + (type || 'info');
+        el.textContent = msg;
+        document.getElementById('toast-container').appendChild(el);
+        setTimeout(() => el.remove(), 4000);
+      };
+    }
+
+    // Run on load + every 15s
+    document.addEventListener('DOMContentLoaded', () => {
+      loadIoTProfiles();
+      loadDHCPData();
+      loadTrafficData();
+      setInterval(refreshNewFeatures, 15000);
+    });
+  </script>
+
+  <!-- ════ NETWORK INTERFACE SELECTION JS ════ -->
+  <script>
+    let _allInterfaces = [], _selectedIface = null, _ifaceDropOpen = false;
+
+    function loadInterfaces() {
+      const listEl = document.getElementById('iface-dropdown-list');
+      if (listEl) listEl.innerHTML = '<div style="padding:1.2rem;color:#4a5568;font-size:.82rem;text-align:center"><span class="iface-loading-spinner"></span></div>';
+      fetch('/api/interfaces').then(r => r.json()).then(d => {
+        _allInterfaces = d.interfaces || [];
+        _renderIfaceDropdown();
+        _populateTabSelects();
+        if (!_selectedIface && _allInterfaces.length) {
+          const first = _allInterfaces.find(i => i.is_up !== false) || _allInterfaces[0];
+          _applySelection(first.name, first.ip, first.description || first.name, first.is_up !== false, false);
+        }
+      }).catch(() => {
+        if (listEl) listEl.innerHTML = '<div style="padding:1rem;color:#ef4444;font-size:.8rem;text-align:center">Could not load interfaces</div>';
+        const n = document.getElementById('iface-selected-name');
+        if (n) n.textContent = 'Auto';
+      });
+    }
+
+    function _renderIfaceDropdown() {
+      const list = document.getElementById('iface-dropdown-list');
+      if (!list) return;
+      let html = `<div class="iface-item ${!_selectedIface ? 'selected' : ''}" onclick="selectInterface(null,'','Auto (Default)',true)">
+      <div class="iface-dot-up"></div>
+      <div class="iface-item-info"><div class="iface-item-name">Auto (Default)</div><div class="iface-item-desc">Let system choose automatically</div></div>
+      <span class="iface-item-ip">—</span>
+    </div>`;
+      _allInterfaces.forEach(ifc => {
+        const sel = _selectedIface === ifc.name, up = ifc.is_up !== false;
+        const desc = ifc.description || ifc.name;
+        html += `<div class="iface-item ${sel ? 'selected' : ''}" onclick="selectInterface('${ifc.name.replace(/'/g, "\\'")}','${ifc.ip || ''}','${desc.replace(/'/g, "\\'")}',${up})">
+        <div class="${up ? 'iface-dot-up' : 'iface-dot-down'}"></div>
+        <div class="iface-item-info">
+          <div class="iface-item-name">${desc}</div>
+        </div>
+        <span class="iface-item-ip">${ifc.ip || '—'}</span>
+      </div>`;
+      });
+      list.innerHTML = html;
+    }
+
+    function _populateTabSelects() {
+      document.querySelectorAll('.iface-inline-select').forEach(sel => {
+        const cur = sel.value || _selectedIface || '';
+        sel.innerHTML = '<option value="">Auto (Default)</option>';
+        _allInterfaces.forEach(ifc => {
+          const opt = document.createElement('option');
+          opt.value = ifc.name;
+          opt.textContent = `${ifc.description || ifc.name}${ifc.ip ? ' · ' + ifc.ip : ''}`;
+          sel.appendChild(opt);
+        });
+        if (cur) sel.value = cur;
+      });
+    }
+
+    function _applySelection(name, ip, desc, isUp, notify) {
+      _selectedIface = name || null;
+      const nameEl = document.getElementById('iface-selected-name');
+      const ipEl = document.getElementById('iface-selected-ip');
+      const dot = document.getElementById('iface-status-dot');
+      if (nameEl) nameEl.textContent = desc || 'Auto';
+      if (ipEl) ipEl.textContent = ip || '';
+      if (dot) dot.className = isUp ? 'iface-dot-up' : 'iface-dot-down';
+      document.querySelectorAll('.iface-inline-select').forEach(s => { s.value = name || ''; });
+      _renderIfaceDropdown();
+      _closeIfaceDropdown();
+      if (notify && name) typeof toast !== 'undefined' && toast('Interface: ' + desc + (ip ? ' · ' + ip : ''), 'info');
+    }
+
+    function selectInterface(name, ip, desc, isUp) { _applySelection(name, ip, desc, isUp, true); }
+
+    function toggleIfaceDropdown() {
+      const dd = document.getElementById('iface-dropdown');
+      if (!dd) return;
+      _ifaceDropOpen = !_ifaceDropOpen;
+      _ifaceDropOpen ? dd.classList.add('open') : dd.classList.remove('open');
+      if (_ifaceDropOpen && !_allInterfaces.length) loadInterfaces();
+    }
+
+    function _closeIfaceDropdown() {
+      _ifaceDropOpen = false;
+      const dd = document.getElementById('iface-dropdown');
+      if (dd) dd.classList.remove('open');
+    }
+
+    document.addEventListener('click', e => {
+      if (!document.getElementById('iface-selector-wrap')?.contains(e.target)) _closeIfaceDropdown();
+    });
+
+    function _tabIface(tab) {
+      const sel = document.querySelector('#tab-' + tab + ' .iface-inline-select');
+      return (sel && sel.value) ? sel.value : (_selectedIface || null);
+    }
+
+    // Override toggleDHCP
+    window.toggleDHCP = function () {
+      const btn = document.getElementById('dhcp-toggle-btn');
+      if (window.dhcpRunning) {
+        fetch('/api/dhcp/stop', { method: 'POST' }).then(() => {
+          window.dhcpRunning = false;
+          btn.textContent = '▶ Start Monitor'; btn.className = 'toggle-btn stopped';
+          typeof toast !== 'undefined' && toast('DHCP Monitor stopped.', 'info');
+        });
+      } else {
+        const iface = _tabIface('dhcp');
+        fetch('/api/dhcp/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ iface: iface }) })
+          .then(r => r.json()).then(() => {
+            window.dhcpRunning = true;
+            btn.innerHTML = '⏹ Stop Monitor'; btn.className = 'toggle-btn running';
+            typeof toast !== 'undefined' && toast('DHCP Monitor started' + (iface ? ' on ' + iface : '') + '!', 'success');
+          });
+      }
+    };
+
+    // Override toggleTraffic
+    window.toggleTraffic = function () {
+      const btn = document.getElementById('traffic-toggle-btn');
+      if (window.trafficRunning) {
+        fetch('/api/traffic/stop', { method: 'POST' }).then(() => {
+          window.trafficRunning = false;
+          btn.textContent = '▶ Start Analyzer'; btn.className = 'toggle-btn stopped';
+          typeof toast !== 'undefined' && toast('Traffic Analyzer stopped.', 'info');
+        });
+      } else {
+        const iface = _tabIface('traffic');
+        fetch('/api/traffic/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ iface: iface }) })
+          .then(r => r.json()).then(() => {
+            window.trafficRunning = true;
+            btn.innerHTML = '⏹ Stop Analyzer'; btn.className = 'toggle-btn running';
+            typeof toast !== 'undefined' && toast('Traffic Analyzer started' + (iface ? ' on ' + iface : '') + '!', 'success');
+          });
+      }
+    };
+
+    // ════════════════════════════════════════════════════════════
+    //  NEW FEATURE JS — RT Monitor & Attack Detector
+    // ════════════════════════════════════════════════════════════
+
+    window.monitorRunning = false;
+    window.attacksRunning = false;
+
+    // --- RT Monitor ---
+
+    window.toggleMonitor = function () {
+      const btn = document.getElementById('mon-toggle-btn');
+      if (window.monitorRunning) {
+        fetch('/api/monitor/stop', { method: 'POST' }).then(() => {
+          window.monitorRunning = false;
+          btn.textContent = '▶ Start Monitor'; btn.className = 'toggle-btn stopped';
+          document.getElementById('nav-monitor-count').textContent = '0';
+          document.getElementById('nav-monitor-count').classList.remove('badge-red');
+          typeof toast !== 'undefined' && toast('Real-Time Monitor stopped.', 'info');
+        });
+      } else {
+        const iface = _tabIface('rtmonitor');
+        fetch('/api/monitor/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ iface: iface, interval: 30, no_ap: false })
+        }).then(r => r.json()).then(() => {
+          window.monitorRunning = true;
+          btn.innerHTML = '⏹ Stop Monitor'; btn.className = 'toggle-btn running';
+          typeof toast !== 'undefined' && toast('Real-Time Monitor started' + (iface ? ' on ' + iface : '') + '!', 'success');
+          _pollMonitor();
+        });
+      }
+    };
+
+    function _pollMonitor() {
+      if (!window.monitorRunning) return;
+
+      // 1. Stats
+      fetch('/api/monitor/stats').then(r => r.json()).then(data => {
+        if (!data.is_running) { window.monitorRunning = false; return; }
+        document.getElementById('mon-scan-count').textContent = data.scan_count || 0;
+        document.getElementById('mon-device-count').textContent = data.device_count || 0;
+        document.getElementById('mon-alerts-fired').textContent = data.alerts_fired || 0;
+        document.getElementById('nav-monitor-count').textContent = data.device_count || 0;
+      }).catch(() => { });
+
+      // 2. Devices Table
+      fetch('/api/monitor/devices').then(r => r.json()).then(data => {
+        const tbody = document.getElementById('mon-device-tbody');
+        if (!data.devices || !data.devices.length) {
+          tbody.innerHTML = '<tr><td colspan="7" style="padding:2rem;text-align:center;color:#4a5568">No devices discovered yet...</td></tr>';
+          return;
+        }
+        let html = '';
+        // Sort by risk descending
+        const devs = data.devices.sort((a, b) => (b.risk_score || 0) - (a.risk_score || 0));
+        devs.forEach(d => {
+          const rlvl = d.risk_level || 'LOW';
+          const rcolor = rlvl === 'CRITICAL' || rlvl === 'HIGH' ? '#f87171' : (rlvl === 'MEDIUM' ? '#fbbf24' : '#4ade80');
+          html += `<tr style="border-bottom:1px solid #1e2430">
+            <td style="padding:.6rem .8rem;font-family:monospace">${d.ip || ''}</td>
+            <td style="padding:.6rem .8rem;font-family:monospace;color:#a0aec0">${d.mac || ''}</td>
+            <td style="padding:.6rem .8rem">${(d.vendor || '').substring(0, 20)}</td>
+            <td style="padding:.6rem .8rem;color:#a0aec0">${(d.hostname || '').substring(0, 20)}</td>
+            <td style="padding:.6rem .8rem;color:${rcolor};font-weight:600">${rlvl}</td>
+            <td style="padding:.6rem .8rem;color:#718096">${d.first_seen || ''}</td>
+            <td style="padding:.6rem .8rem"><span class="badge ${d.status === 'ONLINE' ? 'badge-green' : ''}">${d.status}</span></td>
+          </tr>`;
+        });
+        tbody.innerHTML = html;
+      }).catch(() => { });
+
+      // 3. AP Scan
+      fetch('/api/monitor/ap-scan').then(r => r.json()).then(data => {
+        const list = document.getElementById('mon-ap-list');
+        const badge = document.getElementById('mon-ap-badge');
+        const evil = data.evil_twins || [];
+        const total = data.total_aps || 0;
+        if (total === 0) {
+          badge.textContent = 'SCANNING...';
+          badge.className = 'card-badge';
+          return;
+        }
+        if (evil.length > 0) {
+          badge.textContent = `${evil.length} EVIL TWINS`;
+          badge.className = 'card-badge card-badge-live highlight-pulse';
+          let html = '';
+          evil.forEach(ap => {
+            html += `<div style="padding:.5rem;background:rgba(248,113,113,0.1);border-left:3px solid #f87171;margin-bottom:.5rem">
+              <strong style="color:#f87171">${ap.ssid}</strong> (${ap.bssid})<br>
+              <span style="color:#a0aec0;font-size:.7rem">${ap.auth} · CH ${ap.channel} · SIG ${ap.signal}</span>
+            </div>`;
+          });
+          list.innerHTML = html;
+        } else {
+          badge.textContent = `${total} APs SAFE`;
+          badge.className = 'card-badge';
+          list.innerHTML = `<div class="empty-state" style="color:#4ade80">✓ ${total} Access Points scanned. No Rogue APs detected.</div>`;
+        }
+      }).catch(() => { });
+
+      // 4. Correlation Events
+      fetch('/api/monitor/events?n=20').then(r => r.json()).then(data => {
+        const list = document.getElementById('mon-corr-list');
+        document.getElementById('mon-corr-count').textContent = data.count || 0;
+        if (!data.events || !data.events.length) return;
+        let html = '';
+        data.events.reverse().forEach(ev => {
+          const sev = ev.severity || 'INFO';
+          const icon = sev === 'CRITICAL' ? '🚨' : (sev === 'HIGH' ? '⚠' : (sev === 'MEDIUM' ? '⚠' : 'ℹ'));
+          const color = sev === 'CRITICAL' || sev === 'HIGH' ? '#f87171' : (sev === 'MEDIUM' ? '#fbbf24' : '#4ade80');
+          html += `<div style="padding:.6rem;border-bottom:1px solid #1e2430">
+            <div style="display:flex;justify-content:space-between;margin-bottom:.3rem">
+              <strong style="color:${color}">${icon} ${ev.type}</strong>
+              <span style="color:#718096;font-size:.7rem">${ev.timestamp}</span>
+            </div>
+            <div style="color:#a0aec0;margin-bottom:.3rem">${ev.description}</div>
+            <div style="font-family:monospace;color:#4a5568">${ev.ip} [${ev.mac}]</div>
+          </div>`;
+        });
+        list.innerHTML = html;
+      }).catch(() => { });
+
+      setTimeout(_pollMonitor, 2500);
+    }
+
+    // --- Attack Detector ---
+
+    window.toggleAttackDetector = function () {
+      const btn = document.getElementById('atk-toggle-btn');
+      if (window.attacksRunning) {
+        fetch('/api/attacks/stop', { method: 'POST' }).then(() => {
+          window.attacksRunning = false;
+          btn.textContent = '▶ Start Detector'; btn.className = 'toggle-btn stopped';
+          document.getElementById('nav-attack-count').textContent = '0';
+          document.getElementById('nav-attack-count').classList.remove('highlight-pulse');
+          typeof toast !== 'undefined' && toast('Attack Detector stopped.', 'info');
+        });
+      } else {
+        const iface = _tabIface('attacks');
+        fetch('/api/attacks/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ iface: iface })
+        }).then(r => r.json()).then(() => {
+          window.attacksRunning = true;
+          btn.innerHTML = '⏹ Stop Detector'; btn.className = 'toggle-btn running';
+          typeof toast !== 'undefined' && toast('Attack Detector started' + (iface ? ' on ' + iface : '') + '!', 'success');
+          _pollAttacks();
+        });
+      }
+    };
+
+    function _pollAttacks() {
+      if (!window.attacksRunning) return;
+
+      // 1. Stats & Summary
+      fetch('/api/attacks/status').then(r => r.json()).then(data => {
+        if (!data.is_running) { window.attacksRunning = false; return; }
+        document.getElementById('atk-mitm').textContent = data.mitm_alerts || 0;
+        document.getElementById('atk-ddos').textContent = data.ddos_alerts || 0;
+        document.getElementById('atk-floods').textContent = (data.syn_alerts || 0) + (data.icmp_alerts || 0) + (data.udp_alerts || 0);
+        document.getElementById('atk-behavioral').textContent = data.behavioral || 0;
+        document.getElementById('atk-ioc').textContent = data.ioc_matches || 0;
+        document.getElementById('atk-predictive').textContent = data.predictive || 0;
+        document.getElementById('atk-correlated').textContent = data.correlated || 0;
+        document.getElementById('atk-pkts').textContent = (data.pkts_processed || 0).toLocaleString();
+        document.getElementById('atk-uptime').textContent = (data.uptime_seconds || 0) + 's';
+
+        const navCount = document.getElementById('nav-attack-count');
+        navCount.textContent = data.total_alerts || 0;
+        if (data.total_alerts > 0) navCount.classList.add('highlight-pulse');
+      }).catch(() => { });
+
+      // 2. Events List
+      fetch('/api/attacks/events?n=50').then(r => r.json()).then(data => {
+        const list = document.getElementById('atk-events-list');
+        if (!data.events || !data.events.length) return;
+        let html = '';
+        data.events.reverse().forEach(ev => {
+          const sev = ev.severity || 'INFO';
+          const icon = sev === 'CRITICAL' ? '🚨🚨' : (sev === 'HIGH' ? '🚨' : (sev === 'MEDIUM' ? '⚠️' : 'ℹ️'));
+          const color = sev === 'CRITICAL' ? '#f87171' : (sev === 'HIGH' ? '#f87171' : (sev === 'MEDIUM' ? '#fbbf24' : '#4ade80'));
+          html += `<div style="padding:.8rem;border-bottom:1px solid #1e2430;background:${sev === 'CRITICAL' ? 'rgba(248,113,113,0.05)' : 'transparent'}">
+            <div style="display:flex;justify-content:space-between;margin-bottom:.4rem">
+              <strong style="color:${color};font-size:.9rem;letter-spacing:.02em">${icon} ${ev.attack_type}</strong>
+              <span style="color:#718096;font-size:.78rem">${ev.timestamp}</span>
+            </div>
+            <div style="color:#e2e8f0;margin-bottom:.5rem;font-size:.85rem">${ev.description}</div>
+            <div style="display:flex;gap:1rem;font-size:.75rem;font-family:monospace;color:#a0aec0">
+              <span><span style="color:#4a5568">SRC</span> ${ev.src_ip}</span>
+              <span><span style="color:#4a5568">MAC</span> ${ev.src_mac || '?'}</span>
+              <span><span style="color:#4a5568">VENDOR</span> ${(ev.src_vendor || '?').substring(0, 15)}</span>
+            </div>
+          </div>`;
+        });
+        list.innerHTML = html;
+      }).catch(() => { });
+
+      // 3. IOC Threats
+      fetch('/api/attacks/threats').then(r => r.json()).then(data => {
+        const list = document.getElementById('atk-ioc-list');
+        const badge = document.getElementById('atk-ioc-badge');
+        badge.textContent = `${data.count || 0} IOCs`;
+        if (!data.threats || !data.threats.length) return;
+        badge.className = 'card-badge card-badge-live highlight-pulse';
+        let html = '';
+        data.threats.reverse().forEach(ev => {
+          html += `<div style="padding:.5rem;border-bottom:1px solid #1e2430">
+            <strong style="color:#f87171">${ev.src_ip}</strong><br>
+            <span style="color:#a0aec0">${ev.src_mac || '?'} · ${(ev.src_vendor || '').substring(0, 15)}</span>
+          </div>`;
+        });
+        list.innerHTML = html;
+      }).catch(() => { });
+
+      setTimeout(_pollAttacks, 2000);
+    }
+
+    // ── Wi-Fi Security ──────────────────────────────────────────
+
+    function loadWifiAllowlist() {
+      fetch('/api/wifi/allowlist').then(r => r.json()).then(d => {
+        const wl = d.allowlist || [];
+        const tbody = document.getElementById('wifi-allowlist-tbody');
+        if (!wl.length) {
+          tbody.innerHTML = '<tr><td colspan="2" class="empty-state">No trusted SSIDs yet.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = wl.map(ssid => {
+          return `<tr><td>${ssid}</td><td><button onclick="removeWifiAllowlist('${ssid}')" style="background:transparent;border:none;color:#ef4444;cursor:pointer">Remove</button></td></tr>`;
+        }).join('');
+      });
+    }
+
+    window.addWifiAllowlist = function (e) {
+      e.preventDefault();
+      const ssid = document.getElementById('wa-ssid').value.trim();
+      if (!ssid) return;
+      fetch('/api/wifi/allowlist', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ssid }) })
+        .then(r => r.json()).then(d => {
+          document.getElementById('wa-ssid').value = '';
+          typeof toast !== 'undefined' && toast('SSID allowed successfully', 'success');
+          loadWifiAllowlist();
+        });
+    }
+
+    window.removeWifiAllowlist = function (ssid) {
+      if (!confirm(`Remove ${ssid} from allowlist?`)) return;
+      fetch('/api/wifi/allowlist/' + encodeURIComponent(ssid), { method: 'DELETE' })
+        .then(r => r.json()).then(d => {
+          typeof toast !== 'undefined' && toast('SSID removed', 'info');
+          loadWifiAllowlist();
+        });
+    }
+
+    window.triggerWifiScan = function () {
+      const btn = document.getElementById('wifi-scanner-btn');
+      const ring = document.getElementById('wifi-scan-ring');
+      const txt = document.getElementById('wifi-scan-status-text');
+      btn.disabled = true;
+      ring.style.display = 'inline-block';
+      txt.textContent = 'Scanning wireless network...';
+      document.getElementById('wifi-scan-results-content').style.display = 'none';
+
+      fetch('/api/wifi/scan', { method: 'POST' }).then(r => r.json()).then(d => {
+        btn.disabled = false;
+        ring.style.display = 'none';
+        txt.textContent = 'Scan Complete';
+
+        document.getElementById('wifi-scan-results-content').style.display = 'block';
+        document.getElementById('wifi-total-aps').textContent = (d.total_aps || 0) + ' Total APs';
+        const badCount = (d.evil_twins ? d.evil_twins.length : 0) + (d.weak_aps ? d.weak_aps.length : 0);
+        document.getElementById('wifi-evil-twins').textContent = badCount + ' Potential Risks';
+
+        const tbody = document.getElementById('wifi-tbody');
+        if (badCount === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No Risks Found!</td></tr>';
+          return;
+        }
+
+        let html = '';
+        const all = [...(d.evil_twins || []), ...(d.weak_aps || [])];
+        all.forEach(ap => {
+          const riskWord = ap.flag || 'ROGUE';
+          const riskColor = riskWord === 'EVIL_TWIN' ? '#ef4444' : '#fb923c';
+          html += `<tr>
+                  <td style="font-weight:bold; color:#e8edf5;">${ap.ssid || 'Unknown'}</td>
+                  <td style="font-family:monospace; font-size:0.75rem;">${(ap.bssids || [ap.bssid || '?']).join(', ')}</td>
+                  <td><span class="badge" style="background:rgba(255,146,60,0.1);color:#fb923c;">${ap.encryption || '!OPEN!'}</span></td>
+                  <td style="color:${riskColor}; font-weight:bold;">${riskWord.replace('_', ' ')}</td>
+              </tr>`;
+        });
+        tbody.innerHTML = html;
+      }).catch(e => {
+        btn.disabled = false;
+        ring.style.display = 'none';
+        txt.textContent = 'Scan Failed';
+        typeof toast !== 'undefined' && toast('Error scanning WiFi: ' + e, 'error');
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadInterfaces();
+      loadWifiAllowlist();
+    });
+
+  </script>
+
+</body>
+
+</html>
