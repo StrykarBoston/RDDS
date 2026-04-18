@@ -133,12 +133,17 @@ _dns_cache: Dict[str, str] = {}
 _dns_lock  = threading.Lock()
 
 def _rdns(ip: str) -> str:
+    """Cached reverse-DNS lookup with a 1-second timeout to prevent blocking."""
     with _dns_lock:
         if ip in _dns_cache:
             return _dns_cache[ip]
     try:
+        _old = socket.getdefaulttimeout()
+        socket.setdefaulttimeout(1.0)
         name = socket.gethostbyaddr(ip)[0]
+        socket.setdefaulttimeout(_old)
     except Exception:
+        socket.setdefaulttimeout(None)
         name = ""
     with _dns_lock:
         _dns_cache[ip] = name
@@ -799,7 +804,7 @@ class AttackDetector:
         while not self._stop_event.wait(1.0):
             try:
                 now = time.time()
-                with threading.Lock(): # Use registry lock if available, or just instance lock
+                with self._events_lock:  # Use the shared instance lock for mutual exclusion
                     snapshot = dict(self._beh_pkt_count)
                     self._beh_pkt_count.clear()
                 for ip_src, count in snapshot.items():

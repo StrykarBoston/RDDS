@@ -19,6 +19,7 @@ ENV/
 data/rdds.db
 data/whitelist.json
 data/allowlist.txt
+data/oui.txt
 
 # Logs
 logs/

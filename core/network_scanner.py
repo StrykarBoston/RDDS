@@ -53,9 +53,15 @@ def get_vendor(mac: str) -> str:
 # ─────────────────────────────────────────────
 
 def resolve_hostname(ip: str) -> str:
+    """Resolve hostname with a 1-second timeout to prevent blocking."""
     try:
-        return socket.gethostbyaddr(ip)[0]
+        _old = socket.getdefaulttimeout()
+        socket.setdefaulttimeout(1.0)
+        name = socket.gethostbyaddr(ip)[0]
+        socket.setdefaulttimeout(_old)
+        return name
     except Exception:
+        socket.setdefaulttimeout(None)
         return ""
 
 

@@ -235,9 +235,19 @@ class Flow:
         return features
 
 class TrafficAnalyzer:
-    def __init__(self, iface=None, passive_mode=True):
+    def __init__(self, iface=None, passive_mode=True,
+                 netflow_port=2055, sflow_port=6343):
+        """Initialize the traffic analyzer.
+        Args:
+            iface: Network interface to sniff on (None = scapy default)
+            passive_mode: If True, passively sniff packets (default True)
+            netflow_port: UDP port for NetFlow collection (default 2055)
+            sflow_port: UDP port for sFlow collection (default 6343)
+        """
         self.iface = iface
         self.passive_mode = passive_mode
+        self.netflow_port = netflow_port
+        self.sflow_port = sflow_port
         self.flows = defaultdict(lambda: None)
         self.local_ip = self.get_local_ip()
         self.capture_stats = {
@@ -253,6 +263,13 @@ class TrafficAnalyzer:
         self._anomalies = deque(maxlen=200)
         self._rx_bytes = 0
         self._tx_bytes = 0
+
+        # Counters for rdds.py stats display
+        self._passive_packets  = 0
+        self._anomalies_count  = 0
+        self._netflow_v5_count = 0
+        self._netflow_v9_count = 0
+        self._sflow_count      = 0
 
         # Internal log for background thread diagnostics
         self._log_file = "traffic_analyzer.log"
@@ -322,6 +339,8 @@ class TrafficAnalyzer:
             pkt_len = len(packet)
             self._rx_bytes += pkt_len
             self.capture_stats['total_packets'] += 1
+            self._passive_packets += 1  # Track for rdds.py stats display
+
             
             if self.capture_stats['start_time'] is None:
                 self.capture_stats['start_time'] = datetime.now()
@@ -479,7 +498,7 @@ class TrafficAnalyzer:
         return self._running
 
     def get_stats(self):
-        """Used by Dashboard API"""
+        """Used by Dashboard API and rdds.py cmd_traffic()"""
         duration = 0
         if self.capture_stats['start_time']:
             end = self.capture_stats['end_time'] or datetime.now()
@@ -487,11 +506,18 @@ class TrafficAnalyzer:
         
         pps = self.capture_stats['total_packets'] / duration if duration > 0 else 0
         return {
-            "total_packets": self.capture_stats['total_packets'],
-            "total_flows": len(self.flows),
+            # Core stats
+            "total_packets":      self.capture_stats['total_packets'],
+            "total_flows":        len(self.flows),
             "packets_per_second": round(pps, 2),
-            "uptime_seconds": round(duration, 2),
-            "ai_loaded": self.ai_model_loaded
+            "uptime_seconds":     round(duration, 2),
+            "ai_loaded":          self.ai_model_loaded,
+            # Stats expected by rdds.py cmd_traffic()
+            "passive_packets":    self._passive_packets,
+            "anomalies_detected": self._anomalies_count,
+            "netflow_v5_records": self._netflow_v5_count,
+            "netflow_v9_records": self._netflow_v9_count,
+            "sflow_samples":      self._sflow_count,
         }
 
     def get_flows(self, src_ip=None, limit=200):
@@ -531,15 +557,33 @@ class TrafficAnalyzer:
         return out[:limit]
 
     def get_top_talkers(self, n=10):
-        """Compute talkers logically"""
-        counts = defaultdict(int)
+        """Compute top talkers — returns dicts with bytes_out, bytes_in, pkts_out keys."""
+        out_bytes  = defaultdict(int)
+        in_bytes   = defaultdict(int)
+        out_pkts   = defaultdict(int)
         for _, flow in list(self.flows.items()):
             if flow:
                 for pkt in flow.packets:
                     if IP in pkt:
-                        counts[pkt[IP].src] += len(pkt)
+                        size = len(pkt)
+                        if pkt[IP].src == self.local_ip:
+                            out_bytes[pkt[IP].src] += size
+                            out_pkts[pkt[IP].src]  += 1
+                        else:
+                            in_bytes[pkt[IP].dst] += size
         
-        talkers = [{"ip": k, "bytes": v} for k, v in counts.items()]
+        all_ips = set(list(out_bytes.keys()) + list(in_bytes.keys()))
+        talkers = [
+            {
+                "ip":       ip,
+                "bytes_out": out_bytes.get(ip, 0),
+                "bytes_in":  in_bytes.get(ip, 0),
+                "pkts_out":  out_pkts.get(ip, 0),
+                # Legacy key for dashboard compatibility
+                "bytes":     out_bytes.get(ip, 0) + in_bytes.get(ip, 0),
+            }
+            for ip in all_ips
+        ]
         talkers.sort(key=lambda x: x["bytes"], reverse=True)
         return talkers[:n]
 

@@ -10,7 +10,14 @@ import time
 import threading
 from typing import Dict, List, Optional
 from collections import defaultdict
-from scapy.all import sniff, Dot11Beacon, Dot11
+try:
+    from scapy.all import sniff, Dot11Beacon, Dot11
+    SCAPY_WIFI = True
+except ImportError:
+    SCAPY_WIFI = False
+    sniff = None
+    Dot11Beacon = None
+    Dot11 = None
 
 from core.config import (ALERT_ROGUE_AP, ALERT_EVIL_TWIN, ALERT_OPEN_AP,
                           SEV_CRITICAL, SEV_HIGH, SEV_MEDIUM, BEACON_JITTER_THRESHOLD)
@@ -160,7 +167,10 @@ def _beacon_handler(pkt):
                 _bssid_capabilities[bssid] = pkt[Dot11Beacon].cap
 
 def start_beacon_analysis_thread():
-    """Start passive beacon sniffing in the background."""
+    """Start passive beacon sniffing in the background (if Scapy is available)."""
+    if not SCAPY_WIFI or sniff is None:
+        return  # Silently skip if Scapy/monitor mode not available
+
     def _sniff_loop():
         try:
             # Captures for a limited window to populate jitter stats
