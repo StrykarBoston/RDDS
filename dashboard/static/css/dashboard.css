@@ -28,8 +28,8 @@
   --yellow: #fbbf24;
 
   --text-primary: #e8edf5;
-  --text-secondary: #7a8499;
-  --text-dim: #4a5568;
+  --text-secondary: #9aa5b8;
+  --text-dim: #718096;
 
   --sidebar-w: 240px;
   --topbar-h: 64px;
@@ -394,6 +394,7 @@ body {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  color: var(--text-primary);
   overflow: hidden;
   transition: var(--transition);
 }
@@ -1250,6 +1251,19 @@ canvas {
   .flow-row.header {
     font-size: .65rem;
   }
+}
+
+.suppressed-badge {
+  background-color: var(--bg-tertiary);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  font-size: 0.70rem;
+  margin-right: 4px;
+  font-weight: 600;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 /* ── ≤ 768px  (mobile / small tablets) ── */

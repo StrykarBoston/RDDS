@@ -501,6 +501,10 @@ class AttackDetector:
                     self._gateway_mac = src_mac
 
     def _fire_arp_change(self, ip: str, new_mac: str, old_mac: str):
+        vendor_new = get_vendor(new_mac).lower()
+        if any(v in vendor_new for v in ["tp-link", "netgear", "eero", "mesh", "repeater"]):
+            return  # Suppress known proxy-ARP behaviors
+            
         key = f"arp:{ip}"
         if _should_fire(key):
             self._emit_event(
@@ -822,7 +826,7 @@ class AttackDetector:
                         q3 = statistics.quantiles(tail, n=4)[2]
                         iqr = q3 - q1
                         upper = q3 + BEHAVIORAL_IQR_MULT * iqr
-                        if pps > upper and pps > 10:
+                        if pps > upper and pps > 500:
                             mac  = self._arp_table.get(ip_src, "")
                             key  = f"beh:{ip_src}"
                             if _should_fire(key):

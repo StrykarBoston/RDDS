@@ -83,15 +83,17 @@ class Flow:
             if packet[TCP].payload and IP in packet:
                 raw_data = bytes(packet[TCP].payload)
                 if len(raw_data) > 64:  # Analyze payloads with sufficient data
-                    ent = calculate_entropy(raw_data)
-                    if ent > PAYLOAD_ENTROPY_LIMIT:
-                        fire_alert(
-                             alert_type="HIGH_PAYLOAD_ENTROPY",
-                             severity=SEV_HIGH,
-                             description=f"High payload entropy ({ent:.2f}) detected from {packet[IP].src} to {packet[IP].dst}:{packet[TCP].dport}. Possible encrypted exfiltration or covert tunnel.",
-                             device_ip=packet[IP].src,
-                             raw_data={"entropy": ent, "payload_size": len(raw_data), "dport": packet[TCP].dport}
-                        )
+                    # Ignore expected encrypted ports
+                    if packet[TCP].dport not in [443, 22, 8443] and packet[TCP].sport not in [443, 22, 8443]:
+                        ent = calculate_entropy(raw_data)
+                        if ent > PAYLOAD_ENTROPY_LIMIT:
+                            fire_alert(
+                                 alert_type="HIGH_PAYLOAD_ENTROPY",
+                                 severity=SEV_HIGH,
+                                 description=f"High payload entropy ({ent:.2f}) detected from {packet[IP].src} to {packet[IP].dst}:{packet[TCP].dport}. Possible encrypted exfiltration or covert tunnel.",
+                                 device_ip=packet[IP].src,
+                                 raw_data={"entropy": ent, "payload_size": len(raw_data), "dport": packet[TCP].dport}
+                            )
                         
         elif UDP in packet:
             self.ports.add(packet[UDP].sport)

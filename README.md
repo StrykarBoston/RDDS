@@ -33,13 +33,14 @@ RDDS monitors your network for professional-grade threat vectors:
 
 | Threat | Detection Method |
 |--------|-----------------|
-| 🚨 **Unknown Devices** | Continuous ARP scanning compared against a secure whitelist. |
-| 🎭 **MAC Spoofing** | Real-time correlation of IP↔MAC historical bindings. |
+| 🚨 **Unknown Devices** | Continuous ARP scanning compared against a secure whitelist, utilizing a massive 36,000+ entry OUI database for pinpoint vendor identification. |
+| 🎭 **MAC Spoofing** | Real-time correlation of IP↔MAC historical bindings with intelligent suppression for mesh network proxy-ARP hardware (e.g., eero, TP-Link). |
 | 📡 **Evil Twin AP** | SSID/BSSID pattern mismatch and encryption downgrade detection. |
 | 🕵️ **MITM Attack** | Cryptographic gateway integrity monitoring. |
-| 🌊 **ARP Flood** | Packet rate-limiting analysis on incoming network frames. |
-| 🌐 **DNS Spoofing** | Analyzing multiple concurrent IP resolutions for specific domains. |
+| 🌊 **ARP Flood & DDoS** | IQR-based packet rate-limiting (tuned >500 PPS) and behavioral anomaly analysis. |
+| 🌐 **DNS Spoofing** | Analyzing multiple concurrent IP resolutions for specific domains with latency-resilient timeouts. |
 | 🤖 **IoT Profiling** | Automated vulnerability assessment for smart-enterprise devices. |
+| 🛡️ **Payload Entropy** | Deep packet inspection with whitelists for modern encrypted ports (443, 22) to trace covert exfiltration channels without false positives. |
 
 ---
 
@@ -118,10 +119,11 @@ python rdds.py detect
 
 ---
 
-## 🖥️ Web Dashboard
+## 🖥️ Web Dashboard & Reporting
 The RDDS dashboard offers a **Premium Dark-Mode Experience**:
 - **Live Stats Cards**: Instant view of total devices and rogue threats.
-- **Alert Timeline**: Visual chart tracking high-severity incidents.
+- **Intelligent Alert Timeline**: Auto-collapsing badge arrays (e.g., `(78x)`) for repeated identical offenses to prevent UI clutter.
+- **Smart HTML Reporting**: Auto-generated security reports featuring colored severity badges (Critical, High, Medium, Low) and External/Local IP context tagging.
 - **Device Management**: Whitelist or remove devices with one click.
 - **Real-Time Feed**: Color-coded alerts with technical details.
 

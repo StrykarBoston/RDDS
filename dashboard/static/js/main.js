@@ -198,12 +198,22 @@ function filterAlerts() {
 function alertHtml(a) {
   const sev = a.severity || 'INFO';
   const time = a.timestamp ? a.timestamp.replace('T', ' ').substring(0, 19) : '—';
+  
+  let descText = a.description || '';
+  let suppressedBadge = '';
+  // Check for "[+X identical alerts suppressed]" prefix from backend
+  const match = descText.match(/^\[\+(\d+) identical alerts suppressed\]\s*/);
+  if (match) {
+    suppressedBadge = `<span class="suppressed-badge">(${match[1]}x)</span>`;
+    descText = descText.substring(match[0].length);
+  }
+  
   return `
     <div class="alert-item">
       <span class="alert-sev-badge sev-${sev}">${sev}</span>
       <div class="alert-body">
         <div class="alert-type">${formatAlertType(a.alert_type)}</div>
-        <div class="alert-desc" title="${escHtml(a.description)}">${escHtml(a.description)}</div>
+        <div class="alert-desc" title="${escHtml(descText)}">${suppressedBadge} ${escHtml(descText)}</div>
         <div class="alert-meta">
           ${a.device_mac ? `MAC: ${a.device_mac}` : ''}
           ${a.device_ip ? ` &nbsp;•&nbsp; IP: ${a.device_ip}` : ''}
@@ -215,18 +225,19 @@ function alertHtml(a) {
 
 function formatAlertType(t) {
   const map = {
-    NEW_UNKNOWN_DEVICE: '🚨 New Unknown Device',
-    ARP_SPOOFING: '🎭 ARP Spoofing',
+    NEW_DEVICE_DETECTED: '🚨 New Unknown Device',
+    ARP_SPOOF: '🎭 ARP Spoofing',
+    DNS_SPOOF: '🌐 DNS Spoofing',
     MITM_DETECTED: '🕵️ MITM Attack',
     MAC_SPOOFING: '🔄 MAC Spoofing',
     ROGUE_ACCESS_POINT: '📡 Rogue Access Point',
-    EVIL_TWIN_AP: '👯 Evil Twin AP',
-    PORT_SCAN_DETECTED: '🔍 Port Scan',
-    DNS_SPOOFING: '🌐 DNS Spoofing',
-    ARP_FLOOD: '🌊 ARP Flood',
-    LATERAL_MOVEMENT: '↔️ Lateral Movement',
     OPEN_AP_DETECTED: '🔓 Open AP',
+    PORT_SCAN_DETECTED: '🔍 Port Scan',
+    IOT_HIGH_RISK_DEVICE: '🤖 IoT High Risk',
+    HIGH_PAYLOAD_ENTROPY: '📦 High Entropy / Exfil',
     BEHAVIORAL_ANOMALY: '📊 Behavioral Anomaly',
+    MULTI_LAYER_CORRELATED: '🔗 Correlated Attack',
+    PREDICTIVE_PRE_ALERT: '🔮 Predictive Alert',
   };
   return map[t] || t;
 }

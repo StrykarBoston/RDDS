@@ -14,7 +14,7 @@ from typing import Dict, List, Optional
 
 try:
     from scapy.all import (ARP, Ether, srp, IP, ICMP, sr1,
-                           sniff, conf, get_if_list)
+                           sniff, conf, get_if_list, TCP)
     SCAPY_AVAILABLE = True
 except ImportError:
     SCAPY_AVAILABLE = False
@@ -32,7 +32,7 @@ _oui_cache: Dict[str, str] = {}
 def _load_oui():
     global _oui_cache
     try:
-        with open(OUI_PATH, "r") as f:
+        with open(OUI_PATH, "r", encoding="utf-8") as f:
             _oui_cache = json.load(f)
     except FileNotFoundError:
         _oui_cache = {}

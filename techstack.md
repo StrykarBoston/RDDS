@@ -22,11 +22,12 @@ RDDS is a modular, high-performance network security system designed to detect a
 - **Scikit-Learn**: Powering the scaling algorithms for telemetry data.
 - **Joblib**: Efficient serialization of trained machine learning models.
 - **Weighted Risk Engine**: Custom logic balancing vendor history, OUI age, and behavioral anomalies to assign 0-100 risk scores.
+- **Traffic Analysis Heuristics**: Advanced IQR-based algorithms tuned (>500 PPS) for scaling burst detection, hardware-aware MAC spoof suppressions (eero, TP-Link, Netgear), and whitelisted port payload entropy limits.
 
 ### 📊 Storage & Reporting
 - **SQLite3**: Lightweight relational database for persistent device tracking and incident logging.
-- **JSON Registry**: Fast flat-file storage for the trusted whitelist and OUI vendor databases.
-- **Python-Docx**: Automated report generator creating professional security audit documents.
+- **JSON Registry**: Fast flat-file storage carrying a massive `36,000+` global OUI vendor dataset for high-frequency hardware lookups.
+- **Python-Docx & HTML Generative Engine**: Automated report generator creating professional security audit documents featuring dynamic CSS severity badges and IP topological tagging.
 
 ---
 

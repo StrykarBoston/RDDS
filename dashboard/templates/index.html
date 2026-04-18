@@ -1057,17 +1057,18 @@
             </select>
             <select class="filter-select" id="type-filter" onchange="filterAlerts()">
               <option value="">All Types</option>
-              <option value="NEW_UNKNOWN_DEVICE">New Device</option>
-              <option value="ARP_SPOOFING">ARP Spoof</option>
-              <option value="MITM_DETECTED">MITM</option>
+              <option value="NEW_DEVICE_DETECTED">New Device</option>
+              <option value="ARP_SPOOF">ARP Spoof</option>
+              <option value="DNS_SPOOF">DNS Spoof</option>
               <option value="MAC_SPOOFING">MAC Spoof</option>
               <option value="ROGUE_ACCESS_POINT">Rogue AP</option>
+              <option value="OPEN_AP_DETECTED">Open AP</option>
               <option value="PORT_SCAN_DETECTED">Port Scan</option>
               <option value="IOT_HIGH_RISK_DEVICE">IoT High Risk</option>
-              <option value="ROGUE_DHCP_SERVER">Rogue DHCP</option>
-              <option value="DHCP_STARVATION">DHCP Starvation</option>
-              <option value="TRAFFIC_SPIKE">Traffic Spike</option>
-              <option value="DATA_EXFILTRATION">Data Exfiltration</option>
+              <option value="HIGH_PAYLOAD_ENTROPY">High Entropy / Exfil</option>
+              <option value="BEHAVIORAL_ANOMALY">Behavioral Anomaly</option>
+              <option value="MULTI_LAYER_CORRELATED">Correlated Attack</option>
+              <option value="PREDICTIVE_PRE_ALERT">Predictive Alert</option>
             </select>
           </div>
         </div>

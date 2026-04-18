@@ -347,14 +347,23 @@ def generate_html_report() -> str:
 <head>
 <title>RDDS Security Report</title>
 <style>
-  body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; line-height: 1.6; padding: 20px; max-width: 1000px; margin: 0 auto; }}
-  h1, h2, h3 {{ color: #005096; }}
-  table {{ width: 100%; border-collapse: collapse; margin-bottom: 30px; }}
-  th, td {{ padding: 10px; border: 1px solid #ddd; text-align: left; }}
-  th {{ background-color: #f4f7f6; font-weight: 600; }}
-  .high-risk {{ color: #d9534f; font-weight: bold; }}
-  .header-card {{ background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e9ecef; }}
-</style>
+  body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #cbd5e1; background-color: #0d1117; line-height: 1.6; padding: 20px; max-width: 1000px; margin: 0 auto; }}
+  h1, h2, h3 {{ color: #58a6ff; }}
+  table {{ width: 100%; border-collapse: collapse; margin-bottom: 30px; background-color: #161b22; border-radius: 6px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }}
+  th, td {{ padding: 12px 15px; border-bottom: 1px solid #30363d; text-align: left; }}
+  th {{ background-color: #21262d; font-weight: 600; color: #c9d1d9; }}
+  tr:last-child td {{ border-bottom: none; }}
+  
+  .badge {{ padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85em; text-transform: uppercase; }}
+  .badge-critical {{ background-color: rgba(248, 81, 73, 0.2); color: #ff7b72; border: 1px solid rgba(248, 81, 73, 0.4); }}
+  .badge-high {{ background-color: rgba(255, 123, 114, 0.15); color: #ffa657; border: 1px solid rgba(255, 123, 114, 0.3); }}
+  .badge-medium {{ background-color: rgba(210, 153, 34, 0.15); color: #d29922; border: 1px solid rgba(210, 153, 34, 0.3); }}
+  .badge-low {{ background-color: rgba(88, 166, 255, 0.15); color: #79c0ff; border: 1px solid rgba(88, 166, 255, 0.3); }}
+  .badge-info {{ background-color: rgba(46, 160, 67, 0.15); color: #56d364; border: 1px solid rgba(46, 160, 67, 0.3); }}
+  
+  .high-risk {{ color: #ff7b72; font-weight: bold; }}
+  .header-card {{ background: #161b22; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #30363d; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }}
+  </style>
 </head>
 <body>
   <h1>RDDS Network Security Report</h1>
@@ -407,10 +416,17 @@ def generate_html_report() -> str:
             sev = a.get("severity", "").upper()
             mac = a.get("device_mac", "")
             ip = a.get("device_ip", "")
-            target_str = f"Target: {mac} / {ip}<br>" if mac or ip else ""
+            
+            target_str = ""
+            if ip:
+                domain_tag = "(Local)" if ip.startswith(("192.168.", "10.", "172.")) else "(External)"
+                target_str = f"Target: {mac} / {ip} <strong>{domain_tag}</strong><br>"
+            elif mac:
+                target_str = f"Target: {mac}<br>"
+                
             desc = target_str + a.get("description", "")
-            sev_class = "high-risk" if sev in ['CRITICAL', 'HIGH'] else ""
-            html += f"<tr><td>{ts}</td><td class='{sev_class}'>{sev}</td><td>{a.get('alert_type','')}</td><td>{desc}</td></tr>\n"
+            badge_class = f"badge badge-{sev.lower()}"
+            html += f"<tr><td>{ts}</td><td><span class='{badge_class}'>{sev}</span></td><td>{a.get('alert_type','')}</td><td>{desc}</td></tr>\n"
             
         html += """
   </table>
