@@ -81,7 +81,9 @@ def arp_scan(target: str = NETWORK_TARGET, timeout: int = 3) -> List[Dict]:
     discovered = []
     try:
         packet = Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=target)
-        answered, _ = srp(packet, timeout=timeout, verbose=False)
+        from core.config import normalize_iface, SNIFF_IFACE
+        iface_norm = normalize_iface(SNIFF_IFACE) if SNIFF_IFACE else None
+        answered, _ = srp(packet, timeout=timeout, verbose=False, iface=iface_norm)
         for sent, received in answered:
             mac    = received.hwsrc.lower()
             ip     = received.psrc
@@ -259,9 +261,9 @@ def passive_sniff(iface=None, timeout: int = SNIFF_TIMEOUT) -> List[Dict]:
     
     # We use importing from SCAPY_AVAILABLE scope for TCP
     try:
-        from core.config import PACKET_ENGINE_BPF_FILTER
+        from core.config import PACKET_ENGINE_BPF_FILTER, normalize_iface
         sniff(filter="arp or tcp", prn=_handle_packet,
-              iface=iface, timeout=timeout, store=False)
+              iface=normalize_iface(iface), timeout=timeout, store=False)
     except Exception as e:
         print(f"[!] Passive sniff error: {e}")
 

@@ -505,7 +505,8 @@ class RealTimeMonitor:
             pkt = Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=self.network)
             kwargs = {"timeout": 2, "verbose": False}
             if self.iface:
-                kwargs["iface"] = self.iface
+                from core.config import normalize_iface
+                kwargs["iface"] = normalize_iface(self.iface)
             answered, _ = srp(pkt, **kwargs)
             for _, rcv in answered:
                 ip  = rcv[ARP].psrc

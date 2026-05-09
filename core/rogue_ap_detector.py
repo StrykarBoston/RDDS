@@ -173,8 +173,12 @@ def start_beacon_analysis_thread():
 
     def _sniff_loop():
         try:
+            from core.config import SNIFF_IFACE, normalize_iface
+            kwargs = {"prn": _beacon_handler, "store": 0, "timeout": 15}
+            if SNIFF_IFACE:
+                kwargs["iface"] = normalize_iface(SNIFF_IFACE)
             # Captures for a limited window to populate jitter stats
-            sniff(prn=_beacon_handler, store=0, timeout=15)
+            sniff(**kwargs)
         except Exception:
             pass  # Fails gently if monitor mode or Npcap missing
 
@@ -271,17 +275,20 @@ def detect_evil_twin(aps: List[Dict]) -> List[Dict]:
                         suspicious.append(inst)
                 else:
                     # Same encryption/channel, capabilities match, timing stable
-                    desc = (
-                        f"Multiple BSSIDs for SSID '{ssid}': "
-                        f"{[i['bssid'] for i in instances]} — "
-                        "Verify if this is a legitimate mesh network."
-                    )
-                    fire_alert(
-                        alert_type=ALERT_ROGUE_AP,
-                        severity=SEV_MEDIUM,
-                        description=desc,
-                        raw_data={"ssid": ssid, "bssids": [i["bssid"] for i in instances]}
-                    )
+                    from core.network_scanner import get_vendor
+                    vendors = {get_vendor(i["bssid"]) for i in instances}
+                    if len(vendors) > 1 and "Unknown" not in vendors:
+                        desc = (
+                            f"Multiple BSSIDs for SSID '{ssid}' with different vendors ({vendors}): "
+                            f"{[i['bssid'] for i in instances]} — "
+                            "Verify if this is a legitimate mesh network or a rogue AP."
+                        )
+                        fire_alert(
+                            alert_type=ALERT_ROGUE_AP,
+                            severity=SEV_MEDIUM,
+                            description=desc,
+                            raw_data={"ssid": ssid, "bssids": [i["bssid"] for i in instances]}
+                        )
 
     # Check against known baseline
     for ap in aps:
@@ -327,7 +334,7 @@ def detect_weak_encryption(aps: List[Dict]) -> List[Dict]:
         enc  = ap.get("encryption",     "").lower()
 
         is_open = enc in ("none", "") or auth in ("open", "")
-        is_weak = any(w in auth for w in WEAK_AUTH)
+        is_weak = any(w in auth for w in WEAK_AUTH) and not any(s in auth for s in STRONG_AUTH)
 
         if is_open:
             fire_alert(

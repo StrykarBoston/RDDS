@@ -430,6 +430,8 @@ class IoTProfiler:
                 "profiled_at":   ts,
             }
             db.upsert_iot_profile(mac, ip, db_profile)
+            # Sync the risk score back to the main device table for the dashboard integration
+            db.update_risk_score(mac, iot_score)
         except Exception:
             pass  # DB may not have the table yet — handled gracefully
 

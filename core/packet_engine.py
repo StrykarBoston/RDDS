@@ -271,9 +271,10 @@ def start_packet_engine(iface=None, duration=0):
         if sys.platform != "win32":
             kwargs["buffer_size"] = PACKET_BUFFER_SIZE
             
+        from core.config import normalize_iface
         sniff(
             prn=packet_handler,
-            iface=iface,
+            iface=normalize_iface(iface),
             store=False,
             filter=PACKET_ENGINE_BPF_FILTER,
             stop_filter=lambda _: _stop_event.is_set(),

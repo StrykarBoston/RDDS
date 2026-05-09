@@ -131,6 +131,20 @@ def get_default_gateway():
     except Exception:
         return "192.168.1.1"
 
+def normalize_iface(iface):
+    r"""
+    Format interface string for Scapy on Windows.
+    Converts raw GUID {XXXX...} strings to \Device\NPF_{XXXX...}
+    to prevent 'Error opening adapter (123)'.
+    """
+    if not iface:
+        return iface
+    if os.name == 'nt' and isinstance(iface, str):
+        iface = iface.strip()
+        if iface.startswith('{') and iface.endswith('}'):
+            return f"\\Device\\NPF_{iface}"
+    return iface
+
 # Ensure directories exist at import time
 for _d in [DATA_DIR, LOG_DIR, REPORTS_DIR]:
     os.makedirs(_d, exist_ok=True)

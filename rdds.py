@@ -21,7 +21,12 @@ import json
 import time
 import threading
 import subprocess
+import warnings
 from datetime import datetime
+
+# Suppress harmless CryptographyDeprecationWarning from Scapy
+warnings.filterwarnings("ignore", category=UserWarning, module="scapy")
+warnings.filterwarnings("ignore", message=".*TripleDES has been moved.*")
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

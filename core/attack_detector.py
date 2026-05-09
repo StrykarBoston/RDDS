@@ -80,9 +80,9 @@ PORT_SCAN_PORTS         = 10    # unique dst ports in PORT_SCAN_WIN
 PORT_SCAN_WIN           = 10    # seconds
 LATERAL_PORTS           = {22, 23, 135, 139, 445, 3389, 5985, 5986, 4444, 1433, 5432}
 LATERAL_THRESHOLD       = 5     # hits to high-risk port from one src
-BEHAVIORAL_IQR_MULT     = 3.0   # IQR multiplier for outlier detection
+BEHAVIORAL_IQR_MULT     = 4.0   # IQR multiplier for outlier detection
 BEHAVIORAL_MIN_SAMPLES  = 15    # minimum samples before IQR fires
-PREDICT_ACCEL_THRESHOLD = 50.0  # PPS acceleration (pkts/s²) pre-alert
+PREDICT_ACCEL_THRESHOLD = 250.0 # PPS acceleration (pkts/s²) pre-alert
 ALERT_DEDUP_TTL         = 30    # seconds to suppress repeat alert
 MAX_EVENTS_RING         = 1000  # ring buffer size for events
 
@@ -383,11 +383,13 @@ class AttackDetector:
             "stop_filter": lambda _: self._stop_event.is_set(),
         }
         if self.iface:
-            kwargs["iface"] = self.iface
+            from core.config import normalize_iface
+            kwargs["iface"] = normalize_iface(self.iface)
         if self.duration > 0:
             kwargs["timeout"] = self.duration
         try:
             sniff(**kwargs)
+
         except Exception as e:
             print_warn(f"[AttackDetector] Sniff error: {e}")
 
@@ -523,6 +525,8 @@ class AttackDetector:
     # ── 2. DDoS DETECTION ──────────────────────────────────
 
     def _detect_ddos(self, dst_ip: str, src_ip: str):
+        if dst_ip.startswith("224.") or dst_ip.startswith("239.") or dst_ip == "255.255.255.255":
+            return
         now = time.time()
         q = self._ddos_srcmap[dst_ip]
         q.append((now, src_ip))
@@ -826,7 +830,7 @@ class AttackDetector:
                         q3 = statistics.quantiles(tail, n=4)[2]
                         iqr = q3 - q1
                         upper = q3 + BEHAVIORAL_IQR_MULT * iqr
-                        if pps > upper and pps > 500:
+                        if pps > upper and pps > 1000:
                             mac  = self._arp_table.get(ip_src, "")
                             key  = f"beh:{ip_src}"
                             if _should_fire(key):

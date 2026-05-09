@@ -274,9 +274,12 @@ def _handle_ack(server_ip: str, client_mac: str, assigned_ip: str,
         _lease_table[client_mac] = (
             assigned_ip, lease_time, server_ip, time.time()
         )
-        # Conflict detection: same IP mapped to multiple MACs
-        _ip_to_macs[assigned_ip].add(client_mac)
-        conflicting_macs = _ip_to_macs[assigned_ip].copy()
+        if assigned_ip != "0.0.0.0":
+            # Conflict detection: same IP mapped to multiple MACs
+            _ip_to_macs[assigned_ip].add(client_mac)
+            conflicting_macs = _ip_to_macs[assigned_ip].copy()
+        else:
+            conflicting_macs = set()
 
     if len(conflicting_macs) > 1:
         if _dedup_ok("DHCP_IP_CONFLICT", assigned_ip):
@@ -459,9 +462,10 @@ class DHCPMonitor:
 
     def _run_scapy(self):
         """Scapy-based DHCP sniff loop."""
+        from core.config import normalize_iface
         try:
             sniff(
-                iface=self.iface,
+                iface=normalize_iface(self.iface),
                 filter="udp and (port 67 or port 68)",
                 prn=_scapy_packet_handler,
                 stop_filter=lambda p: self._stop.is_set(),

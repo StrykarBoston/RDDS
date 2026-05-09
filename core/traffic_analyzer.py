@@ -435,7 +435,8 @@ class TrafficAnalyzer:
         self._stop_event.clear()
 
         # Step 1: Resolve interface (Windows GUID vs Friendly Name)
-        resolved_iface = self.iface
+        from core.config import normalize_iface
+        resolved_iface = normalize_iface(self.iface)
         if resolved_iface:
             try:
                 from scapy.all import conf
@@ -446,7 +447,7 @@ class TrafficAnalyzer:
                     if resolved_iface.lower() in [iface_obj.name.lower(), 
                                                  iface_obj.description.lower(), 
                                                  str(iface_key).lower()]:
-                        resolved_iface = iface_key
+                        resolved_iface = normalize_iface(str(iface_key))
                         break
             except Exception as e:
                 self._log(f"Interface resolution error: {e}")
